@@ -1,0 +1,38 @@
+name: Build and Test
+description: Build and test the rust application
+
+inputs:
+  rust-version:
+    description: Rust version to use
+    default: stable
+    required: false
+
+outputs:
+  codecov-report:
+    description: The path to the CodeCov coverage report
+    value: ${{ steps.run_tests.outputs.report-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup rust toolchain
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ inputs.rust-version }}
+        components: llvm-tools
+    - name: Install LLVM Tools
+      uses: taiki-e/install-action@cargo-llvm-cov
+    - name: Install cargo-nextest
+      uses: taiki-e/install-action@nextest
+    - name: Build
+      run: cargo build --verbose
+      shell: bash
+    - name: Test
+      id: run_tests
+      env:
+        REPORT_PATH: coverage.xml
+      run: |
+        cargo llvm-cov nextest --verbose --no-fail-fast --codecov --output-path="${REPORT_PATH}"
+        echo "report-path=${REPORT_PATH}" >> "$GITHUB_OUTPUT"
+      shell: bash
+
