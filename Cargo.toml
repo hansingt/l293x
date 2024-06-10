@@ -1,0 +1,23 @@
+[package]
+name = "l293x"
+version = "0.1.0"
+description = "Platform agnostic library for the L293 and L293D motor drivers using embedded-hal"
+authors = ["Torben Hansing"]
+categories = ["embedded", "hardware-support", "no-std"]
+keywords = ["L293", "L293D", "embedded-hal", "embedded-hal-driver", "hal"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/hansingt/l293x"
+edition = "2021"
+include = [
+    "LICENSE",
+    "README.md",
+    "src/**",
+]
+
+[lib]
+doctest = false
+
+[dependencies]
+embedded-hal = {version = "1.0.0" }
+paste = { version = "1.0.15" }
