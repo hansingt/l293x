@@ -1,8 +1,8 @@
 [package]
 name = "l293x"
-version = "0.1.0"
+version = "0.1.1"
 description = "Platform agnostic library for the L293 and L293D motor drivers using embedded-hal"
-authors = ["Torben Hansing"]
+authors = ["hansingt"]
 categories = ["embedded", "hardware-support", "no-std"]
 keywords = ["L293", "L293D", "embedded-hal", "embedded-hal-driver", "hal"]
 license = "MIT"
