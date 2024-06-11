@@ -35,4 +35,3 @@ runs:
         cargo llvm-cov nextest --verbose --no-fail-fast --codecov --output-path="${REPORT_PATH}"
         echo "report-path=${REPORT_PATH}" >> "$GITHUB_OUTPUT"
       shell: bash
-
