@@ -13,10 +13,10 @@ to allow it to be reused in on multiple platforms and boards.
 
 ## Features
 
-- Drivers for a Half-H-Bridge, H-Bridge and L293x chip
+- Drivers for a Half-H Bridge and L293\[D\] chip
 - Support for digital and PWM pins
 - Support for stateful digital pins
-- Splitting the L293x or H-Bridge drivers to usage as inputs to other drivers
+- Splitting the L293x driver to usage as inputs to other drivers
 
 ## License
 
