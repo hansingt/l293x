@@ -1,0 +1,24 @@
+[package]
+name = "esp32-motor"
+version = "0.1.0"
+authors = ["Torben Hansing <torbenhansing@gmail.com>"]
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+esp-hal = { version = "0.18.0", features = ["esp32"] }
+esp-println = { version = "0.9.1", features = ["esp32"] }
+esp-backtrace = { version = "0.12.0", features = [
+    "esp32",
+    "println",
+    "panic-handler",
+] }
+l293x = { path = "../.." }
+
+[profile.release]
+codegen-units = 1
+debug-assertions = false
+incremental = false
+lto = "fat"
+opt-level = 3
+overflow-checks = false
