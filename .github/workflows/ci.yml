@@ -67,4 +67,3 @@ jobs:
           file: ${{ steps.build_and_test.outputs.codecov }}
           name: ${{ matrix.os }}-${{matrix.rust-version}}
           os: ${{ matrix.os }}
-

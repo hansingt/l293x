@@ -11,4 +11,3 @@ runs:
     - name: Run Cargo Security Audit
       run: cargo audit
       shell: bash
-
