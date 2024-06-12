@@ -1,6 +1,7 @@
 [![Latest Version](https://img.shields.io/crates/v/l293x?logo=Rust)](https://crates.io/crates/l293x)
-[![Docs](https://img.shields.io/docsrs/l293x?logo=docs.rs)](https://docs.rs/l293x/latest/l293x/)
+![Minimum Supported Rust Version](https://img.shields.io/crates/msrv/l293x?logo=Rust)
 [![License](https://img.shields.io/crates/l/l293x)](https://crates.io/crates/l293x)
+[![Docs](https://img.shields.io/docsrs/l293x?logo=docs.rs)](https://docs.rs/l293x/latest/l293x/)
 [![CI](https://github.com/hansingt/l293x/actions/workflows/ci.yml/badge.svg)](https://github.com/hansingt/l293x/actions/workflows/ci.yml)
 [![Code Coverage](https://codecov.io/gh/hansingt/l293x/graph/badge.svg?token=udooUR2bx7)](https://codecov.io/gh/hansingt/l293x)
 
