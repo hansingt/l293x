@@ -23,7 +23,7 @@ jobs:
   msrv:
     runs-on: ubuntu-latest
     outputs:
-      msrv: ${{ steps.msrv.outputs.msrv }}
+      msrv: "${{ steps.msrv.outputs.msrv }}"
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/msrv
@@ -31,17 +31,13 @@ jobs:
 
   build_and_test:
     needs: [msrv]
-    strategy:
-      matrix:
-        rust-version: ["${{ needs.msrv.outputs.msrv }}"]
-      fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build_and_test
         id: build_and_test
         with:
-          rust-version: ${{ matrix.rust-version }}
+          rust-version: "${{ needs.msrv.outputs.msrv }}"
 
   publish:
     name: Publish
