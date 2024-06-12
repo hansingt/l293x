@@ -5,9 +5,6 @@ on:
     tags:
       - v*.*.*
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
   check-version:
     runs-on: ubuntu-latest
@@ -19,19 +16,26 @@ jobs:
   audit:
     name: Audit
     runs-on: ubuntu-latest
-    needs: [check-version]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/audit
 
+  msrv:
+    runs-on: ubuntu-latest
+    outputs:
+      msrv: ${{ steps.msrv.outputs.msrv }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/msrv
+        id: msrv
+
   build_and_test:
+    needs: [msrv]
     strategy:
       matrix:
-        rust-version: [stable]
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust-version: ["${{ needs.msrv.outputs.msrv }}"]
       fail-fast: false
-    runs-on: ${{ matrix.os }}
-    needs: [check-version]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build_and_test
