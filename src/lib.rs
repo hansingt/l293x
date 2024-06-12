@@ -141,5 +141,7 @@ mod mock;
 
 // Exports
 pub mod bridge;
-pub mod shared_pin;
+mod output_state_error;
+
 pub use l293x::*;
+pub use output_state_error::*;
