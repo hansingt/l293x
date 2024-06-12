@@ -269,30 +269,6 @@ where
     }
 }
 
-#[derive(Debug)]
-pub enum SplitError<EN12Error, EN34Error> {
-    EnablePin12Error(EN12Error),
-    EnablePin34Error(EN34Error),
-}
-
-impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
-where
-    A1: OutputPin,
-    A2: OutputPin,
-    A3: OutputPin,
-    A4: OutputPin,
-    EN12: OutputPin,
-    EN34: OutputPin,
-{
-    pub fn split(mut self) -> Result<(A1, A2, A3, A4), SplitError<EN12::Error, EN34::Error>> {
-        self.enable_y1_and_y2()
-            .map_err(SplitError::EnablePin12Error)?;
-        self.enable_y3_and_y4()
-            .map_err(SplitError::EnablePin34Error)?;
-        Ok((self.a1, self.a2, self.a3, self.a4))
-    }
-}
-
 macro_rules! output_pin_impl {
     ($output:ident, $input:ident, $type_:ty) => {
         paste::item! {
@@ -743,64 +719,6 @@ mod tests {
         l293x.disable_y3_and_y4().unwrap();
         assert!(!l293x.y3_and_y4_enabled().unwrap());
         assert!(l293x.y3_and_y4_disabled().unwrap());
-    }
-
-    #[test]
-    fn test_split() {
-        let l293x = L293x::new(
-            DigitalPin::new(),
-            DigitalPin::new(),
-            DigitalPin::new(),
-            DigitalPin::new(),
-            DigitalPin::new(),
-            DigitalPin::new(),
-        );
-        let mut en12 = l293x.en12.clone();
-        let mut en34 = l293x.en12.clone();
-        let mut a1 = l293x.a1.clone();
-
-        let (mut y1, _, _, _) = l293x.split().unwrap();
-        assert!(en12.is_set_high().unwrap());
-        assert!(en34.is_set_high().unwrap());
-
-        y1.set_high().unwrap();
-        assert!(a1.is_set_high().unwrap());
-    }
-
-    #[test]
-    fn test_split_error12() {
-        let mut l293x = L293x::new(
-            DigitalPin::new(),
-            DigitalPin::new(),
-            DigitalPin::new(),
-            DigitalPin::new(),
-            DigitalPin::new(),
-            DigitalPin::new(),
-        );
-
-        l293x.en12.fail();
-        assert!(matches!(
-            l293x.split().unwrap_err(),
-            SplitError::EnablePin12Error(..)
-        ));
-    }
-
-    #[test]
-    fn test_split_error34() {
-        let mut l293x = L293x::new(
-            DigitalPin::new(),
-            DigitalPin::new(),
-            DigitalPin::new(),
-            DigitalPin::new(),
-            DigitalPin::new(),
-            DigitalPin::new(),
-        );
-
-        l293x.en34.fail();
-        assert!(matches!(
-            l293x.split().unwrap_err(),
-            SplitError::EnablePin34Error(..)
-        ));
     }
 
     #[test]
