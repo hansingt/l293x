@@ -50,7 +50,7 @@ jobs:
   build_and_test:
     strategy:
       matrix:
-        rust-version: [stable]
+        rust-version: [1.60]
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
