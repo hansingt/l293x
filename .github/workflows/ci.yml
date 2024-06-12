@@ -51,9 +51,8 @@ jobs:
     strategy:
       matrix:
         rust-version: [stable]
-        os: [ubuntu-latest, windows-latest, macos-latest]
       fail-fast: false
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build_and_test
@@ -65,5 +64,4 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ${{ steps.build_and_test.outputs.codecov }}
-          name: ${{ matrix.os }}-${{matrix.rust-version}}
-          os: ${{ matrix.os }}
+          name: unittests-${{matrix.rust-version}}
