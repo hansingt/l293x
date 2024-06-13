@@ -60,6 +60,7 @@ jobs:
         run: cargo msrv --output-format=json verify | tail -n 1 | jq --exit-status '.success'
 
   test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
