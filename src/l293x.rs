@@ -1,5 +1,5 @@
-use crate::bridge::{HalfH, OutputStateError};
-use crate::shared_pin::SharedPin;
+use crate::OutputStateError;
+use core::fmt::Debug;
 use embedded_hal::digital::{OutputPin, StatefulOutputPin};
 use embedded_hal::pwm::SetDutyCycle;
 
@@ -42,22 +42,20 @@ use embedded_hal::pwm::SetDutyCycle;
 /// assert!(l293x.is_output34_disabled().unwrap());
 /// ```
 #[derive(Debug)]
-pub struct L293x<I1, I2, I3, I4, EN12, EN34>
+pub struct L293x<A1, A2, A3, A4, EN12, EN34>
 where
     EN12: OutputPin,
     EN34: OutputPin,
 {
-    /// Half-H bridge controlling output y1
-    pub y1: HalfH<I1, SharedPin<EN12>>,
-    /// Half-H bridge controlling output y2
-    pub y2: HalfH<I2, SharedPin<EN12>>,
-    /// Half-H bridge controlling output y3
-    pub y3: HalfH<I3, SharedPin<EN34>>,
-    /// Half-H bridge controlling output y4
-    pub y4: HalfH<I4, SharedPin<EN34>>,
+    a1: A1,
+    a2: A2,
+    a3: A3,
+    a4: A4,
+    en12: EN12,
+    en34: EN34,
 }
 
-impl<I1, I2, I3, I4, EN12, EN34> L293x<I1, I2, I3, I4, EN12, EN34>
+impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
 where
     EN12: OutputPin,
     EN34: OutputPin,
@@ -74,14 +72,15 @@ where
     /// // [...] create the input pins
     /// let l293x = L293x::new(input1, input2, input3, input4, enable12, enable34);
     /// ```
-    pub fn new(a1: I1, a2: I2, a3: I3, a4: I4, en12: EN12, en34: EN34) -> Self {
-        let en12 = SharedPin::new(en12);
-        let en34 = SharedPin::new(en34);
+    #[inline]
+    pub fn new(a1: A1, a2: A2, a3: A3, a4: A4, en12: EN12, en34: EN34) -> Self {
         Self {
-            y1: HalfH::new(a1, en12.clone()),
-            y2: HalfH::new(a2, en12),
-            y3: HalfH::new(a3, en34.clone()),
-            y4: HalfH::new(a4, en34),
+            a1,
+            a2,
+            a3,
+            a4,
+            en12,
+            en34,
         }
     }
 
@@ -97,7 +96,7 @@ where
     /// of the Half-H-Bridges 1 & 2. The concrete error type returned depends
     /// on the [OutputPin](embedded_hal::digital::OutputPin) used.
     pub fn enable_y1_and_y2(&mut self) -> Result<(), EN12::Error> {
-        self.y1.enable()
+        self.en12.set_high()
     }
 
     /// Disable the output channels 1 & 2.
@@ -112,7 +111,7 @@ where
     /// of the Half-H-Bridges 1 & 2. The concrete error type returned depends
     /// on the [OutputPin](embedded_hal::digital::OutputPin) used.
     pub fn disable_y1_and_y2(&mut self) -> Result<(), EN12::Error> {
-        self.y1.disable()
+        self.en12.set_low()
     }
 
     /// Enable the output channels 3 & 4.
@@ -127,7 +126,7 @@ where
     /// of the Half-H-Bridges 3 & 4. The concrete error type returned depends
     /// on the [OutputPin](embedded_hal::digital::OutputPin) used.
     pub fn enable_y3_and_y4(&mut self) -> Result<(), EN34::Error> {
-        self.y3.enable()
+        self.en34.set_high()
     }
 
     /// Disable the output channels 3 & 4.
@@ -142,11 +141,11 @@ where
     /// of the Half-H-Bridges 3 & 4. The concrete error type returned depends
     /// on the [OutputPin](embedded_hal::digital::OutputPin) used.
     pub fn disable_y3_and_y4(&mut self) -> Result<(), EN34::Error> {
-        self.y3.disable()
+        self.en34.set_low()
     }
 }
 
-impl<I1, I2, I3, I4, EN12, EN34> L293x<I1, I2, I3, I4, EN12, EN34>
+impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
 where
     EN12: StatefulOutputPin,
     EN34: OutputPin,
@@ -176,7 +175,7 @@ where
     /// assert!(l293x.y1_and_y2_enabled().unwrap());
     /// ```
     pub fn y1_and_y2_enabled(&mut self) -> Result<bool, EN12::Error> {
-        self.y1.is_enabled()
+        self.en12.is_set_high()
     }
 
     /// Check whether the output channels 1 & 2 are disabled.
@@ -204,11 +203,11 @@ where
     /// assert!(l293x.y1_and_y2_disabled().unwrap());
     /// ```
     pub fn y1_and_y2_disabled(&mut self) -> Result<bool, EN12::Error> {
-        self.y1.is_disabled()
+        self.en12.is_set_low()
     }
 }
 
-impl<I1, I2, I3, I4, EN12, EN34> L293x<I1, I2, I3, I4, EN12, EN34>
+impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
 where
     EN12: OutputPin,
     EN34: StatefulOutputPin,
@@ -238,7 +237,7 @@ where
     /// assert!(l293x.y3_and_y4_enabled().unwrap());
     /// ```
     pub fn y3_and_y4_enabled(&mut self) -> Result<bool, EN34::Error> {
-        self.y3.is_enabled()
+        self.en34.is_set_high()
     }
 
     /// Check whether the output channels 3 & 4 are disabled.
@@ -266,18 +265,18 @@ where
     /// assert!(l293x.y3_and_y4_disabled().unwrap());
     /// ```
     pub fn y3_and_y4_disabled(&mut self) -> Result<bool, EN34::Error> {
-        self.y3.is_disabled()
+        self.en34.is_set_low()
     }
 }
 
 macro_rules! output_pin_impl {
-    ($output:ident, $type_:ty, $enable:ty) => {
+    ($output:ident, $input:ident, $type_:ty) => {
         paste::item! {
-            impl<I1, I2, I3, I4, EN12, EN34> L293x<I1, I2, I3, I4, EN12, EN34>
+            impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
             where
+                $type_: OutputPin,
                 EN12: OutputPin,
                 EN34: OutputPin,
-                $type_: OutputPin,
             {
                 #[doc = "Set the output " $output " high"]
                 ///
@@ -301,8 +300,8 @@ macro_rules! output_pin_impl {
                 /// of error returned depends on the type of the input pin used.
                 pub fn [< set_ $output _high >](
                     &mut self
-                ) -> Result<(), OutputStateError<$type_::Error, $enable::Error>> {
-                    self.$output.set_high()
+                ) -> Result<(), $type_::Error> {
+                    self.$input.set_high()
                 }
 
                 #[doc = "Set the output " $output " low"]
@@ -327,9 +326,10 @@ macro_rules! output_pin_impl {
                 /// of error returned depends on the type of the input pin used.
                 pub fn [< set_ $output _low >](
                     &mut self
-                ) -> Result<(), OutputStateError<$type_::Error, $enable::Error>> {
-                    self.$output.set_low()
+                ) -> Result<(), $type_::Error> {
+                    self.$input.set_low()
                 }
+
                 #[doc = "Set the state of output " $output]
                 ///
                 /// # Note
@@ -353,27 +353,27 @@ macro_rules! output_pin_impl {
                 pub fn [< set_ $output _state >](
                     &mut self,
                     state: embedded_hal::digital::PinState
-                ) -> Result<(), OutputStateError<$type_::Error, $enable::Error>> {
-                    self.$output.set_state(state)
+                ) -> Result<(), $type_::Error> {
+                    self.$input.set_state(state)
                 }
             }
         }
     };
 }
-output_pin_impl!(y1, I1, EN12);
-output_pin_impl!(y2, I2, EN12);
-output_pin_impl!(y3, I3, EN34);
-output_pin_impl!(y4, I4, EN34);
+output_pin_impl!(y1, a1, A1);
+output_pin_impl!(y2, a2, A2);
+output_pin_impl!(y3, a3, A3);
+output_pin_impl!(y4, a4, A4);
 
 macro_rules! stateful_output_pin_impl {
-    ($output:ident, $type_:ty, $enable:ty) => {
+    ($output:ident, $input:ident, $type_:ty, $enable:ident, $enable_ty:ty) => {
         paste::item! {
-            impl<I1, I2, I3, I4, EN12, EN34> L293x<I1, I2, I3, I4, EN12, EN34>
+            impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
             where
                 $type_: StatefulOutputPin,
-                EN12: embedded_hal::digital::OutputPin,
-                EN34: embedded_hal::digital::OutputPin,
-                $enable: embedded_hal::digital::StatefulOutputPin,
+                EN12: OutputPin,
+                EN34: OutputPin,
+                $enable_ty: StatefulOutputPin,
             {
                 #[doc = "Check if output " $output " is high"]
                 ///
@@ -401,8 +401,11 @@ macro_rules! stateful_output_pin_impl {
                 /// returned instead.
                 pub fn [< is_ $output _high >](
                     &mut self
-                ) -> Result<bool, OutputStateError<$type_::Error, $enable::Error>> {
-                    self.$output.is_set_high()
+                ) -> Result<bool, OutputStateError<$type_::Error, $enable_ty::Error>> {
+                    match self.$enable.is_set_high().map_err(OutputStateError::EnablePinError)? {
+                        false => Ok(false),
+                        true => self.$input.is_set_high().map_err(OutputStateError::InputPinError)
+                    }
                 }
 
                 #[doc = "Check if output " $output " is low"]
@@ -431,8 +434,11 @@ macro_rules! stateful_output_pin_impl {
                 /// returned instead.
                 pub fn [< is_ $output _low >](
                     &mut self
-                ) -> Result<bool, OutputStateError<$type_::Error, $enable::Error>> {
-                    self.$output.is_set_low()
+                ) -> Result<bool, OutputStateError<$type_::Error, $enable_ty::Error>> {
+                    match self.$enable.is_set_high().map_err(OutputStateError::EnablePinError)? {
+                        false => Ok(false),
+                        true => self.$input.is_set_low().map_err(OutputStateError::InputPinError)
+                    }
                 }
 
                 #[doc = "Toggle the state of output " $output]
@@ -455,26 +461,26 @@ macro_rules! stateful_output_pin_impl {
                 /// depends on the type of input pin used.
                 pub fn [< toggle_ $output >](
                     &mut self
-                ) -> Result<(), OutputStateError<$type_::Error, $enable::Error>> {
-                    self.$output.toggle()
+                ) -> Result<(), $type_::Error> {
+                    self.$input.toggle()
                 }
             }
         }
     };
 }
-stateful_output_pin_impl!(y1, I1, EN12);
-stateful_output_pin_impl!(y2, I2, EN12);
-stateful_output_pin_impl!(y3, I3, EN34);
-stateful_output_pin_impl!(y4, I4, EN34);
+stateful_output_pin_impl!(y1, a1, A1, en12, EN12);
+stateful_output_pin_impl!(y2, a2, A2, en12, EN12);
+stateful_output_pin_impl!(y3, a3, A3, en34, EN34);
+stateful_output_pin_impl!(y4, a4, A4, en34, EN34);
 
 macro_rules! pwm_pin_impl {
-    ($output:ident, $type_:ty) => {
+    ($output:ident, $input:ident, $type_:ty) => {
         paste::item! {
-            impl<I1, I2, I3, I4, EN12, EN34> L293x<I1, I2, I3, I4, EN12, EN34>
+            impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
             where
-                EN12: embedded_hal::digital::OutputPin,
-                EN34: embedded_hal::digital::OutputPin,
                 $type_: SetDutyCycle,
+                EN12: OutputPin,
+                EN34: OutputPin,
             {
                 #[doc = "Get the max duty value of output " $output]
                 ///
@@ -489,7 +495,7 @@ macro_rules! pwm_pin_impl {
                 #[doc = "l293x.set_" $output "_duty_cycle(max_duty).unwrap();"]
                 /// ```
                 pub fn [< $output _max_duty_cycle >](&self) -> u16 {
-                    self.$output.max_duty_cycle()
+                    self.$input.max_duty_cycle()
                 }
 
                 #[doc = "Set the duty cycle of output " $output]
@@ -536,7 +542,7 @@ macro_rules! pwm_pin_impl {
                 pub fn [< set_ $output _duty_cycle >](
                     &mut self, duty: u16
                 ) -> Result<(), $type_::Error> {
-                    self.$output.set_duty_cycle(duty)
+                    self.$input.set_duty_cycle(duty)
                 }
 
                 #[doc = "Set the duty cycle of output " $output " by fraction."]
@@ -580,7 +586,7 @@ macro_rules! pwm_pin_impl {
                 pub fn [< set_ $output _duty_cycle_fraction >](
                     &mut self, nom: u16, denom: u16
                 ) -> Result<(), $type_::Error> {
-                    self.$output.set_duty_cycle_fraction(nom, denom)
+                    self.$input.set_duty_cycle_fraction(nom, denom)
                 }
 
                 #[doc = "Set the duty cycle of output " $output " by percent"]
@@ -607,7 +613,7 @@ macro_rules! pwm_pin_impl {
                 pub fn [< set_ $output _duty_cycle_percent >](
                     &mut self, percent: u8,
                 ) -> Result<(), $type_::Error> {
-                    self.$output.set_duty_cycle_percent(percent)
+                    self.$input.set_duty_cycle_percent(percent)
                 }
 
                 #[doc = "Fully enable the output " $output]
@@ -631,7 +637,7 @@ macro_rules! pwm_pin_impl {
                 pub fn [< set_ $output _duty_cycle_fully_on >](
                     &mut self
                 ) -> Result<(), $type_::Error> {
-                    self.$output.set_duty_cycle_fully_on()
+                    self.$input.set_duty_cycle_fully_on()
                 }
 
                 #[doc = "Fully disable the output " $output]
@@ -655,22 +661,26 @@ macro_rules! pwm_pin_impl {
                 pub fn [< set_ $output _duty_cycle_fully_off >](
                     &mut self
                 ) -> Result<(), $type_::Error> {
-                    self.$output.set_duty_cycle_fully_off()
+                    self.$input.set_duty_cycle_fully_off()
                 }
             }
         }
     };
 }
-pwm_pin_impl!(y1, I1);
-pwm_pin_impl!(y2, I2);
-pwm_pin_impl!(y3, I3);
-pwm_pin_impl!(y4, I4);
+pwm_pin_impl!(y1, a1, A1);
+pwm_pin_impl!(y2, a2, A2);
+pwm_pin_impl!(y3, a3, A3);
+pwm_pin_impl!(y4, a4, A4);
 
 #[cfg(test)]
 mod tests {
+    extern crate std;
+
     use super::*;
     use crate::mock::{DigitalPin, PwmPin};
-    use embedded_hal::digital::{PinState, StatefulOutputPin};
+    use coverage_helper::test;
+    use embedded_hal::digital::PinState;
+    use std::collections::HashMap;
 
     #[test]
     fn test_enable12() {
@@ -713,8 +723,8 @@ mod tests {
     }
 
     #[test]
-    fn test_split() {
-        let l293x = L293x::new(
+    fn test_enable12_fail() {
+        let mut l293x = L293x::new(
             DigitalPin::new(),
             DigitalPin::new(),
             DigitalPin::new(),
@@ -722,16 +732,52 @@ mod tests {
             DigitalPin::new(),
             DigitalPin::new(),
         );
-        let mut l293x_2 = L293x::new(
-            l293x.y1,
-            l293x.y2,
-            l293x.y3,
-            l293x.y4,
+        l293x.en12.fail();
+        assert!(matches!(
+            l293x.is_y1_high().unwrap_err(),
+            OutputStateError::EnablePinError(..)
+        ));
+        assert!(matches!(
+            l293x.is_y2_high().unwrap_err(),
+            OutputStateError::EnablePinError(..)
+        ));
+        assert!(matches!(
+            l293x.is_y1_low().unwrap_err(),
+            OutputStateError::EnablePinError(..)
+        ));
+        assert!(matches!(
+            l293x.is_y2_low().unwrap_err(),
+            OutputStateError::EnablePinError(..)
+        ));
+    }
+
+    #[test]
+    fn test_enable34_fail() {
+        let mut l293x = L293x::new(
+            DigitalPin::new(),
+            DigitalPin::new(),
+            DigitalPin::new(),
+            DigitalPin::new(),
             DigitalPin::new(),
             DigitalPin::new(),
         );
-        l293x_2.set_y1_high().unwrap();
-        assert!(l293x_2.y1.input.input.is_set_high().unwrap())
+        l293x.en34.fail();
+        assert!(matches!(
+            l293x.is_y3_high().unwrap_err(),
+            OutputStateError::EnablePinError(..)
+        ));
+        assert!(matches!(
+            l293x.is_y4_high().unwrap_err(),
+            OutputStateError::EnablePinError(..)
+        ));
+        assert!(matches!(
+            l293x.is_y3_low().unwrap_err(),
+            OutputStateError::EnablePinError(..)
+        ));
+        assert!(matches!(
+            l293x.is_y4_low().unwrap_err(),
+            OutputStateError::EnablePinError(..)
+        ));
     }
 
     macro_rules! test_output {
@@ -841,22 +887,31 @@ mod tests {
                         DigitalPin::new(),
                     );
 
+                    let mut pins = HashMap::<&str, PwmPin>::from([
+                        ("y1", l293x.a1.clone()),
+                        ("y2", l293x.a2.clone()),
+                        ("y3", l293x.a3.clone()),
+                        ("y4", l293x.a4.clone()),
+                    ]);
+                    let pin_name = stringify!($name);
+                    let pin = pins.get_mut(pin_name).unwrap();
+
                     let max_duty = l293x.[< $name _max_duty_cycle >]();
 
-                    l293x.[< set_ $name _ duty_cycle >](max_duty).unwrap();
-                    assert_eq!(l293x.$name.input.get_duty_cycle(), max_duty);
+                    l293x.[< set_ $name _duty_cycle >](max_duty).unwrap();
+                    assert_eq!(pin.get_duty_cycle(), max_duty);
 
-                    l293x.[< set_ $name _ duty_cycle_fraction >](1, 2).unwrap();
-                    assert_eq!(l293x.$name.input.get_duty_cycle(), max_duty / 2);
+                    l293x.[< set_ $name _duty_cycle_fraction >](1, 2).unwrap();
+                    assert_eq!(pin.get_duty_cycle(), max_duty / 2);
 
-                    l293x.[< set_ $name _ duty_cycle_percent >](25).unwrap();
-                    assert_eq!(l293x.$name.input.get_duty_cycle(), max_duty / 4);
+                    l293x.[< set_ $name _duty_cycle_percent >](25).unwrap();
+                    assert_eq!(pin.get_duty_cycle(), max_duty / 4);
 
-                    l293x.[< set_ $name _ duty_cycle_fully_on >]().unwrap();
-                    assert_eq!(l293x.$name.input.get_duty_cycle(), max_duty);
+                    l293x.[< set_ $name _duty_cycle_fully_on >]().unwrap();
+                    assert_eq!(pin.get_duty_cycle(), max_duty);
 
-                    l293x.[< set_ $name _ duty_cycle_fully_off >]().unwrap();
-                    assert_eq!(l293x.$name.input.get_duty_cycle(), 0);
+                    l293x.[< set_ $name _duty_cycle_fully_off >]().unwrap();
+                    assert_eq!(pin.get_duty_cycle(), 0);
                 }
             }
         };
