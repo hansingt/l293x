@@ -11,7 +11,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! l293x = { version = "0.1.0" }
+//! l293x = { version = "0.1.1" }
 //! ```
 //!
 //! Then you can instantiate a new L293x chip using the corresponding pins
@@ -96,29 +96,6 @@
 //! }
 //! ```
 //!
-//! ## Usage as input to other drivers
-//!
-//! In some cases, it might be necessary, to use parts of the controller as inputs to other
-//! components. Because of this, The outputs of the L293x driver implement the
-//! [embedded_hal] traits as well.
-//!
-//! Depending on the traits implemented by the corresponding input, the output might
-//! either implement the [embedded_hal::digital::OutputPin], [embedded_hal::digital::StatefulOutputPin],
-//! or the [embedded_hal::pwm::SetDutyCycle] traits.
-//!
-//! > **⚠️ WARNING:**
-//! > Because the Half-H-Bridges 1 & 2 as well as 3 & 4 each share an enable pin, they can
-//! > only be enabled or disabled together!
-//!
-//! ```
-//! use l293x::L293x;
-//! use embedded_hal::digital::OutputPin;
-//!
-//! let l293x = L293x::new(/* ... */).unwrap(); //!
-//! // The outputs can be accessed using the y1-y4 fields
-//! l293x.y1.set_high().unwrap();
-//! ```
-//!
 //! ## Using only parts of the L293x chip
 //!
 //! In case only parts of the L293x chips shall be used, this crate implements
@@ -134,6 +111,9 @@
 //! For more information, see the struct documentation.
 #![no_std]
 #![deny(unstable_features, unsafe_code)]
+#![cfg_attr(all(coverage_nightly, test), allow(unstable_features))]
+#![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
+
 mod l293x;
 
 #[cfg(test)]
@@ -141,5 +121,7 @@ mod mock;
 
 // Exports
 pub mod bridge;
-pub mod shared_pin;
+mod output_state_error;
+
 pub use l293x::*;
+pub use output_state_error::*;

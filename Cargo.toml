@@ -23,3 +23,6 @@ doctest = false
 [dependencies]
 embedded-hal = {version = "1.0.0" }
 paste = { version = "1.0.15" }
+
+[dev-dependencies]
+coverage-helper = { version = "0.2.2" }
