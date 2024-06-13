@@ -47,8 +47,7 @@ jobs:
       - name: Install cargo-msrv
         run: cargo binstall -y cargo-msrv
       - name: Verify MSRV
-        shell: bash
-        run: cargo msrv --output-format=json verify | tail -n 1 | jq --exit-status '.success'
+        run: cargo msrv verify
 
   test:
     name: Test
