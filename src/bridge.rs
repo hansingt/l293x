@@ -319,6 +319,7 @@ where
 mod tests {
     use super::*;
     use crate::mock::{DigitalError, DigitalPin, PwmPin};
+    use coverage_helper::test;
 
     fn bridge() -> HalfH<DigitalPin, DigitalPin> {
         HalfH::new(DigitalPin::new(), DigitalPin::new())

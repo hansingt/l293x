@@ -111,6 +111,9 @@
 //! For more information, see the struct documentation.
 #![no_std]
 #![deny(unstable_features, unsafe_code)]
+#![cfg_attr(all(coverage_nightly, test), allow(unstable_features))]
+#![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
+
 mod l293x;
 
 #[cfg(test)]

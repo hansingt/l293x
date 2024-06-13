@@ -678,6 +678,7 @@ mod tests {
 
     use super::*;
     use crate::mock::{DigitalPin, PwmPin};
+    use coverage_helper::test;
     use embedded_hal::digital::PinState;
     use std::collections::HashMap;
 
