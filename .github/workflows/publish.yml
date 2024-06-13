@@ -60,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [generate-changelog, publish_crates_io]
     permissions:
-      packages: write
+      contents: write
     steps:
       - name: Create Release
         uses: softprops/action-gh-release@v2
