@@ -1,0 +1,32 @@
+name: Minimum Supported Rust Version
+description: Get the MSRV of this project
+
+outputs:
+  msrv:
+    description: The MSRV of this project
+    value: ${{ steps.msrv.outputs.msrv }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup rust toolchain
+      uses: dtolnay/rust-toolchain@nightly
+    - name: Install cargo-binstall
+      shell: bash
+      run: |
+        curl -L --proto '=https' --tlsv1.2 -sSf \
+          -o install-from-binstall-release.sh \
+          https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh
+        bash install-from-binstall-release.sh
+    - name: Install cargo-msrv
+      shell: bash
+      run: cargo binstall -y --locked cargo-msrv
+    - name: Verify MSRV
+      shell: bash
+      run: cargo msrv verify
+    - name: Output MSRV
+      id: msrv
+      shell: bash
+      run: |
+        MSRV=$(cargo msrv show 2>&1 | tail -n1)
+        echo "msrv=${MSRV}" > $GITHUB_OUTPUT

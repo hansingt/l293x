@@ -47,21 +47,35 @@ jobs:
       - name: Run clippy
         run: cargo clippy --all-features --fix -- -D warnings
 
-  build_and_test:
-    strategy:
-      matrix:
-        rust-version: [stable]
-      fail-fast: false
+  msrv:
+    runs-on: ubuntu-latest
+    outputs:
+      msrv: "${{ steps.msrv.outputs.msrv }}"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/msrv
+        id: msrv
+
+  coverage:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/build_and_test
-        id: build_and_test
+      - uses: ./.github/actions/test
+        id: coverage
         with:
-          rust-version: ${{ matrix.rust-version }}
+          rust-version: nightly
+          coverage: 'true'
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ${{ steps.build_and_test.outputs.codecov }}
-          name: unittests-${{matrix.rust-version}}
+          file: ${{ steps.coverage.outputs.codecov }}
+
+  test:
+    needs: [msrv]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/test
+        with:
+          rust-version: "${{ needs.msrv.outputs.msrv }}"
