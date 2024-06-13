@@ -1,5 +1,5 @@
-name: Build and Test
-description: Build and test the rust application
+name: Test
+description: Build and test the Rust application
 
 inputs:
   rust-version:
@@ -14,7 +14,7 @@ inputs:
 outputs:
   codecov-report:
     description: The path to the CodeCov coverage report
-    value: ${{ steps.run_tests.outputs.report-path }}
+    value: ${{ steps.tests.outputs.report-path }}
 
 runs:
   using: composite
@@ -30,16 +30,13 @@ runs:
       with:
         toolchain: ${{ inputs.rust-version }}
       if: inputs.coverage != 'true'
-    - name: Install LLVM Tools
+    - name: Install cargo-llvm-cov
       uses: taiki-e/install-action@cargo-llvm-cov
       if: inputs.coverage == 'true'
     - name: Install cargo-nextest
       uses: taiki-e/install-action@nextest
-    - name: Build
-      shell: bash
-      run: cargo build --verbose
     - name: Test
-      id: run_tests
+      id: tests
       env:
         REPORT_PATH: coverage.xml
       shell: bash

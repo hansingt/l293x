@@ -60,8 +60,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/build_and_test
-        id: build_and_test
+      - uses: ./.github/actions/test
+        id: coverage
         with:
           rust-version: nightly
           coverage: 'true'
@@ -69,14 +69,13 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ${{ steps.build_and_test.outputs.codecov }}
+          file: ${{ steps.coverage.outputs.codecov }}
 
-  build_and_test:
+  test:
     needs: [msrv]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/build_and_test
-        id: build_and_test
+      - uses: ./.github/actions/test
         with:
           rust-version: "${{ needs.msrv.outputs.msrv }}"
