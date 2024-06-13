@@ -50,5 +50,5 @@ runs:
     - name: Test
       shell: bash
       run: |
-        cargo nextest --verbose
+        cargo nextest run --verbose --no-fail-fast
       if: inputs.coverage != 'true'
