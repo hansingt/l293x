@@ -46,7 +46,7 @@ jobs:
         run: cargo clippy --all-features --fix -- -D warnings
 
   msrv:
-    name: Check Rust version
+    name: Check Minimum Supported Rust Version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
