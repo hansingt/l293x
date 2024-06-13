@@ -7,14 +7,16 @@ on:
     branches: [ "main" ]
 
 jobs:
-  audit:
-    name: Audit
+  check:
+    name: Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/audit
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Check
+        run: cargo check --verbose
 
-  fmt:
+  rustfmt:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
@@ -24,17 +26,13 @@ jobs:
           components: rustfmt
       - run: cargo fmt --all -- --check
 
-  docs_and_spell_check:
-    name: Docs and Spell Check
+  typos:
+    name: Typos
     runs-on: ubuntu-latest
-    env:
-      RUSTDOCFLAGS: "-Dwarnings"
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Check spelling
+      - name: Check typos
         uses: crate-ci/typos@master
-      - run: cargo doc --no-deps
 
   clippy:
     name: Clippy
@@ -48,34 +46,45 @@ jobs:
         run: cargo clippy --all-features --fix -- -D warnings
 
   msrv:
+    name: Check Minimum Supported Rust Version
     runs-on: ubuntu-latest
-    outputs:
-      msrv: "${{ steps.msrv.outputs.msrv }}"
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/msrv
-        id: msrv
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
+      - name: Install cargo-msrv
+        run: cargo binstall -y cargo-msrv
+      - name: Verify MSRV
+        shell: bash
+        run: cargo msrv --output-format=json verify | tail -n 1 | jq --exit-status '.success'
 
-  coverage:
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/test
-        id: coverage
+      - name: Setup rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          rust-version: nightly
-          coverage: 'true'
+          components: llvm-tools
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
+      - name: Test
+        id: tests
+        env:
+          REPORT_PATH: coverage.xml
+        shell: bash
+        run: |
+          cargo llvm-cov nextest --verbose --no-fail-fast --codecov --output-path="${REPORT_PATH}"
+          echo "report-path=${REPORT_PATH}" >> "$GITHUB_OUTPUT"
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@v4
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          name: code-coverage-report
           file: ${{ steps.coverage.outputs.codecov }}
-
-  test:
-    needs: [msrv]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/test
-        with:
-          rust-version: "${{ needs.msrv.outputs.msrv }}"
+          flags: unittests
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
