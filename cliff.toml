@@ -72,6 +72,6 @@ commit_parsers = [
   { message = "^revert", group = "<!-- 9 -->◀️ Revert" },
 ]
 protect_breaking_commits = false
-filter_commits = false
+filter_commits = true
 topo_order = false
 sort_commits = "newest"
