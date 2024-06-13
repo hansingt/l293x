@@ -32,7 +32,7 @@ jobs:
           args: --latest --no-exec --github-repo ${{ github.repository }}
       - name: Generate a changelog (full)
         uses: orhun/git-cliff-action@v3
-        id: git-cliff-latest
+        id: git-cliff-full
         with:
           config: cliff.toml
           args: --no-exec --github-repo ${{ github.repository }}
