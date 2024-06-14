@@ -13,59 +13,41 @@ jobs:
       - name: Check version
         uses: tcurdt/action-verify-version-cargo@master
 
-  generate-changelog:
-    name: Generate changelog
-    runs-on: ubuntu-latest
-    outputs:
-      latest: ${{ steps.git-cliff-latest.outputs.content }}
-      full: ${{ steps.git-cliff-full.outputs.content }}
-    steps:
-      # Do a full checkout, to make sure, the changelog is complete
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Generate changelog (latest)
-        uses: orhun/git-cliff-action@v3
-        id: git-cliff-latest
-        with:
-          config: cliff.toml
-          args: --latest --no-exec --github-repo ${{ github.repository }}
-      - name: Generate a changelog (full)
-        uses: orhun/git-cliff-action@v3
-        id: git-cliff-full
-        with:
-          config: cliff.toml
-          args: --no-exec --github-repo ${{ github.repository }}
-
   publish_crates_io:
     name: Publish to crates.io
     runs-on: ubuntu-latest
-    needs: [check-version, generate-changelog]
+    needs: [check-version]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Write Changelog
-        shell: bash
-        run: echo "${{ needs.generate-changelog.outputs.full }}" > CHANGELOG.md
       - name: Publish
         run: |
           cargo publish \
             --verbose \
             --no-verify \
-            --allow-dirty \
             --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
   create_release:
     name: Create GitHub release
     runs-on: ubuntu-latest
-    needs: [generate-changelog, publish_crates_io]
+    needs: [publish_crates_io]
     permissions:
       contents: write
     steps:
+      # Do a full checkout, to make sure, the changelog is complete
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate changelog for release
+        uses: orhun/git-cliff-action@v3
+        id: changelog
+        with:
+          config: cliff.toml
+          args: --latest --no-exec --github-repo ${{ github.repository }}
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ contains(github.ref, '-') }}
           generate_release_notes: false
-          body: ${{ needs.generate-changelog.outputs.latest }}
+          body: ${{ steps.changelog.outputs.content }}
