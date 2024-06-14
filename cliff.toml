@@ -30,6 +30,10 @@ footer = """
             [{{ release.version | trim_start_matches(pat="v") }}]: \
                 https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}\
                     /compare/{{ release.previous.version }}..{{ release.version }}
+        {% else -%}
+            [{{ release.version | trim_start_matches(pat="v") }}]: \
+                https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}\
+                    /commits/{{ release.version }}
         {% endif -%}
     {% else -%}
         [unreleased]: https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}\
@@ -49,7 +53,7 @@ filter_unconventional = true
 split_commits = false
 commit_preprocessors = [
   # Replace issue numbers
-  { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](<REPO>/issues/${2}))" },
+  { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](<REPO>/pull/${2}))" },
   # Check spelling of the commit with https://github.com/crate-ci/typos
   # If the spelling is incorrect, it will be automatically fixed.
   #{ pattern = '.*', replace_command = 'typos --write-changes -' },
@@ -75,3 +79,6 @@ protect_breaking_commits = false
 filter_commits = true
 topo_order = false
 sort_commits = "newest"
+
+[bump]
+breaking_always_bump_major=false
