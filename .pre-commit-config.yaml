@@ -34,3 +34,13 @@ repos:
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
+
+ci:
+  autofix_prs: true
+  autofix_commit_msg: "chore: auto fixes from pre-commit hooks"
+  autoupdate_commit_msg: "chore(deps): pre-commit autoupdate"
+  skip:
+    - typos
+    - fmt
+    - cargo-check
+    - clippy
