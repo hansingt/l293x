@@ -78,3 +78,30 @@ jobs:
           flags: unittests
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  examples:
+    name: Examples
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example: ["examples/esp32-motor"]
+    container:
+      image: docker.io/espressif/idf-rust:esp32_latest
+      options: --user=root
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Rust toolchain
+        shell: bash
+        run: |
+          ln -sf /home/esp/.rustup/ $HOME/
+          ln -sf /home/esp/.cargo/ $HOME/
+          ln -sf /home/esp/.espup/ $HOME/
+          ln -sf /home/esp/export-esp.sh $HOME/
+      - name: Build example
+        shell: bash
+        run: |
+          source $HOME/.cargo/env
+          source $HOME/export-esp.sh
+          cd ${{ matrix.example }}
+          cargo build
