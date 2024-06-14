@@ -7,6 +7,7 @@ categories = ["embedded", "hardware-support", "no-std"]
 keywords = ["L293", "L293D", "embedded-hal", "embedded-hal-driver", "hal"]
 license = "MIT"
 readme = "README.md"
+homepage = "https://github.com/hansingt/l293x"
 repository = "https://github.com/hansingt/l293x"
 edition = "2021"
 rust-version = "1.60"
