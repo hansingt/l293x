@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Features
 
-- [**breaking**] Avoid the `alloc` component ([#10](https://github.com/hansingt/l293x/pull/10))
+- [**breaking**] Avoid the `alloc` component ([#10](https://github.com/hansingt/l293x/issues/10))
 
 ### ⚙️ Miscellaneous Tasks
 
@@ -17,18 +17,18 @@ All notable changes to this project will be documented in this file.
 
 ### 🐛 Bug Fixes
 
-- Define Rust 1.60 as MSRV ([#6](https://github.com/hansingt/l293x/pull/6))
-- Remove H-Bridge from features in README ([#2](https://github.com/hansingt/l293x/pull/2))
+- Define Rust 1.60 as MSRV ([#6](https://github.com/hansingt/l293x/issues/6))
+- Remove H-Bridge from features in README ([#2](https://github.com/hansingt/l293x/issues/2))
 
 ### 📚 Documentation
 
-- Improve the badges ([#7](https://github.com/hansingt/l293x/pull/7))
+- Improve the badges ([#7](https://github.com/hansingt/l293x/issues/7))
 
 ### ⚙️ Miscellaneous Tasks
 
-- Use basic changelog template ([#13](https://github.com/hansingt/l293x/pull/13))
+- Use basic changelog template ([#13](https://github.com/hansingt/l293x/issues/13))
 - Update changelog template
-- Add git-cliff for automatic changelog generation ([#9](https://github.com/hansingt/l293x/pull/9))
+- Add git-cliff for automatic changelog generation ([#9](https://github.com/hansingt/l293x/issues/9))
 
 ## [0.1.1] - 2024-06-13
 
