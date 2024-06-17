@@ -7,14 +7,8 @@
 //! multiple platforms and boards.
 //!
 //! ## Basic usage
-//! Include the library as a dependency in your `Cargo.toml`:
-//!
-//! ```toml
-//! [dependencies]
-//! l293x = { version = "0.1.1" }
-//! ```
-//!
-//! Then you can instantiate a new L293x chip using the corresponding pins
+//! 
+//! You can instantiate a new L293x chip using the corresponding pins
 //! from `embedded-hal`.
 //!
 //! E.g. with an ESP32 Chip using the `esp-hal` crate:
@@ -139,8 +133,10 @@ mod l293x;
 mod mock;
 
 // Exports
+mod half_h;
 mod output_state_error;
 pub mod pins;
 
-pub use l293x::*;
-pub use output_state_error::*;
+pub use half_h::HalfH;
+pub use l293x::L293x;
+pub use output_state_error::OutputStateError;

@@ -1,6 +1,6 @@
 use embedded_hal::digital::{Error, ErrorKind};
 
-/// Error returned by the [L293x](crate::L293x) and [HalfH](crate::bridge::HalfH) implementations.
+/// Error returned by the [L293x](crate::L293x) and [HalfH](crate::HalfH) implementations.
 ///
 /// This enumeration combines the possible errors returned by the input pin and the enable pin.
 ///
@@ -80,8 +80,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::mock::DigitalError;
+
+    use super::*;
 
     #[test]
     fn check_output_state_error_kind() {
@@ -92,6 +93,10 @@ mod tests {
         let enable_error: OutputStateError<DigitalError, DigitalError> =
             OutputStateError::EnablePinError(DigitalError());
         assert_eq!(enable_error.kind(), DigitalError().kind());
+
+        let not_enabled: OutputStateError<DigitalError, DigitalError> =
+            OutputStateError::NotEnabled;
+        assert_eq!(not_enabled.kind(), ErrorKind::Other);
     }
 
     #[test]
@@ -100,10 +105,17 @@ mod tests {
             OutputStateError::InputPinError(DigitalError());
         let e: OutputStateError<DigitalError, DigitalError> =
             OutputStateError::EnablePinError(DigitalError());
+        let ne: OutputStateError<DigitalError, DigitalError> = OutputStateError::NotEnabled;
 
         assert_eq!(i, i);
         assert_eq!(e, e);
+        assert_eq!(ne, ne);
+
         assert_ne!(e, i);
+        assert_ne!(e, ne);
         assert_ne!(i, e);
+        assert_ne!(i, ne);
+        assert_ne!(ne, e);
+        assert_ne!(ne, i);
     }
 }

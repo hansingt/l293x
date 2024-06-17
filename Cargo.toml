@@ -27,3 +27,6 @@ paste = { version = "1.0.15" }
 
 [dev-dependencies]
 coverage-helper = { version = "0.2.2" }
+
+[lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = ["cfg(coverage_nightly)"] }

@@ -47,7 +47,6 @@ use embedded_hal::digital::{Error, ErrorKind, ErrorType, OutputPin, StatefulOutp
 pub struct OperationNotSupported();
 
 impl Error for OperationNotSupported {
-    #[cfg_attr(all(coverage_nightly, test), coverage(off))]
     fn kind(&self) -> ErrorKind {
         ErrorKind::Other
     }
@@ -216,6 +215,12 @@ impl StatefulOutputPin for Gnd {
 mod tests {
     use super::*;
     use coverage_helper::test;
+
+    #[test]
+    fn test_error_kind() {
+        let e = OperationNotSupported();
+        assert_eq!(e.kind(), ErrorKind::Other);
+    }
 
     #[test]
     fn test_vcc() {
