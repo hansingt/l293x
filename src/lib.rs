@@ -98,14 +98,33 @@
 //!
 //! ## Using only parts of the L293x chip
 //!
-//! In case only parts of the L293x chips shall be used, this crate implements
-//! a [`HalfH`](bridge::HalfH) struct as well. It can be used to address a single Half-H bridge of
-//! the L293x chip.
+//! The four Half-H bridges of the L293 Chip can be use independent of each other. Because of this,
+//! if you only want to use parts of the chip, you could pass the empty type (`()`) instead of a
+//! real pin for the inputs not connected:
 //!
 //! ```
-//! # use l293x::HalfH;
-//! // [...] create the input pins
-//! let mut gate = HalfH::new(input1, enable).unwrap();
+//! # use l293x::L293x;
+//! let mut l293x = L293x::new(input1, (), (), (), enable12, ());
+//! ```
+//!
+//! This causes the type to only implement the functions for the matching outputs.
+//!
+//! ```compile_fail
+//! # use l293x::L293x;
+//! # let mut l293x = L293x::new(input1, (), (), (), enable12, ());
+//! l293x.set_y1_high()?;  // <-- Ok!
+//! l293x.set_y2_high()?;  // <-- Does not compile!
+//! ```
+//!
+//! Because parts of the functionalities of the output relies on the enable pins
+//! to be connected, leaving the enable pins not connected does not work. Instead, if your enable
+//! pin is always connected to Vcc, the [Vcc](crate::pins::Vcc) struct can be used to express this:
+//!
+//! ```
+//! # use l293x::L293x;
+//! use l293x::pins::Vcc;
+//!
+//! let mut l293x = L293x::new(input1, (), (), (), Vcc(), ());
 //! ```
 //!
 //! For more information, see the struct documentation.
@@ -120,8 +139,8 @@ mod l293x;
 mod mock;
 
 // Exports
-pub mod bridge;
 mod output_state_error;
+pub mod pins;
 
 pub use l293x::*;
 pub use output_state_error::*;

@@ -22,6 +22,9 @@ use embedded_hal::pwm::SetDutyCycle;
 ///
 /// # Examples
 ///
+///
+/// ## Basic Usage
+///
 /// A new L293x driver can be created using the [`new()`](L293x::new) method:
 ///
 /// ```
@@ -36,17 +39,48 @@ use embedded_hal::pwm::SetDutyCycle;
 /// # use l293x::L293x;
 /// # let mut l293x = L293x::new(input1, input2, input3, input4, enable12, enable34);
 /// l293x.enable12().unwrap();
-/// assert!(l293x.is_output12_enabled().unwrap());
+/// assert!(l293x.is_output12_enabled()?);
 ///
 /// l293x.disable34().unwrap();
-/// assert!(l293x.is_output34_disabled().unwrap());
+/// assert!(l293x.is_output34_disabled()?);
 /// ```
+///
+/// ## Partial Usage
+///
+/// The four Half-H bridges of the L293 Chip can be use independent of each other. Because of this,
+/// if you only want to use parts of the chip, you could pass the empty type (`()`) instead of a
+/// real pin for the inputs not connected:
+///
+/// ```
+/// # use l293x::L293x;
+/// let mut l293x = L293x::new(input1, (), (), (), enable12, ());
+/// ```
+///
+/// This causes the type to only implement the functions for the matching outputs.
+///
+/// ```compile_fail
+/// # use l293x::L293x;
+/// # let mut l293x = L293x::new(input1, (), (), (), enable12, ());
+/// l293x.set_y1_high()?;  // <-- Ok!
+/// l293x.set_y2_high()?;  // <-- Does not compile!
+/// ```
+///
+/// Because parts of the functionalities of the output relies on the enable pins
+/// to be connected, leaving the enable pins not connected does not work. Instead, if your enable
+/// pin is always connected to Vcc, the [Vcc](crate::pins::Vcc) struct can be used to express this:
+///
+/// ```
+/// # use l293x::L293x;
+/// use l293x::pins::Vcc;
+///
+/// let mut l293x = L293x::new(input1, (), (), (), Vcc(), ());
+/// ```
+///
+/// This will signal that the corresponding pin is always high and cannot be set low. For more
+/// information please see the documentation of the [pins](crate::pins) module.
+
 #[derive(Debug)]
-pub struct L293x<A1, A2, A3, A4, EN12, EN34>
-where
-    EN12: OutputPin,
-    EN34: OutputPin,
-{
+pub struct L293x<A1, A2, A3, A4, EN12, EN34> {
     a1: A1,
     a2: A2,
     a3: A3,
@@ -55,11 +89,7 @@ where
     en34: EN34,
 }
 
-impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
-where
-    EN12: OutputPin,
-    EN34: OutputPin,
-{
+impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34> {
     /// Create a new L293x chip driver.
     ///
     /// This function takes the given input and enable pins and constructs
@@ -83,7 +113,12 @@ where
             en34,
         }
     }
+}
 
+impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
+where
+    EN12: OutputPin,
+{
     /// Enable the output channels 1 & 2.
     ///
     /// This method enables the Half-H-Bridges 1 & 2 which share a common
@@ -113,7 +148,12 @@ where
     pub fn disable_y1_and_y2(&mut self) -> Result<(), EN12::Error> {
         self.en12.set_low()
     }
+}
 
+impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
+where
+    EN34: OutputPin,
+{
     /// Enable the output channels 3 & 4.
     ///
     /// This method enables the Half-H-Bridges 3 & 4 which share a common
@@ -148,7 +188,6 @@ where
 impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
 where
     EN12: StatefulOutputPin,
-    EN34: OutputPin,
 {
     /// Check whether the output channels 1 & 2 are enabled.
     ///
@@ -209,7 +248,6 @@ where
 
 impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
 where
-    EN12: OutputPin,
     EN34: StatefulOutputPin,
 {
     /// Check whether the output channels 3 & 4 are enabled.
@@ -275,8 +313,6 @@ macro_rules! output_pin_impl {
             impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
             where
                 $type_: OutputPin,
-                EN12: OutputPin,
-                EN34: OutputPin,
             {
                 #[doc = "Set the output " $output " high"]
                 ///
@@ -371,18 +407,12 @@ macro_rules! stateful_output_pin_impl {
             impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
             where
                 $type_: StatefulOutputPin,
-                EN12: OutputPin,
-                EN34: OutputPin,
                 $enable_ty: StatefulOutputPin,
             {
                 #[doc = "Check if output " $output " is high"]
                 ///
                 /// The output of a L293x chip is high, only the output is enabled and
                 /// the if the corresponding input is high.
-                ///
-                /// If the output is disabled, it is neither high, nor low but remains
-                /// in an high impendance state und thus, its electrical level depends
-                /// on the components connected to it.
                 ///
                 /// # Note
                 ///
@@ -391,6 +421,11 @@ macro_rules! stateful_output_pin_impl {
                 /// the pin may vary due to the layout of the circuit.
                 ///
                 /// # Errors
+                ///
+                /// If the output is disabled, it is neither high, nor low but remains
+                /// in an high impendance state und thus, its electrical level depends
+                /// on the components connected to it. In this case, a
+                /// [OutputStateError::NotEnabled] error will be returned.
                 ///
                 /// In case of an error, while reading the state of the enable pin,
                 /// this method will return an [OutputStateError::EnablePinError]
@@ -403,7 +438,7 @@ macro_rules! stateful_output_pin_impl {
                     &mut self
                 ) -> Result<bool, OutputStateError<$type_::Error, $enable_ty::Error>> {
                     match self.$enable.is_set_high().map_err(OutputStateError::EnablePinError)? {
-                        false => Ok(false),
+                        false => Err(OutputStateError::NotEnabled),
                         true => self.$input.is_set_high().map_err(OutputStateError::InputPinError)
                     }
                 }
@@ -413,10 +448,6 @@ macro_rules! stateful_output_pin_impl {
                 /// The output of a L293x chip is low, only the output is enabled and
                 /// the if the corresponding input is low.
                 ///
-                /// If the output is disabled, it is neither high, nor low but remains
-                /// in an high impendance state und thus, its electrical level depends
-                /// on the components connected to it.
-                ///
                 /// # Note
                 ///
                 /// Please note, that this method does not check the electrical level of
@@ -424,6 +455,11 @@ macro_rules! stateful_output_pin_impl {
                 /// the pin may vary due to the layout of the circuit.
                 ///
                 /// # Errors
+                ///
+                /// If the output is disabled, it is neither high, nor low but remains
+                /// in an high impendance state und thus, its electrical level depends
+                /// on the components connected to it. In this case, a
+                /// [OutputStateError::NotEnabled] error will be returned.
                 ///
                 /// In case of an error, while reading the state of the enable pin, this method
                 /// will return an [OutputStateError::EnablePinError]
@@ -436,7 +472,7 @@ macro_rules! stateful_output_pin_impl {
                     &mut self
                 ) -> Result<bool, OutputStateError<$type_::Error, $enable_ty::Error>> {
                     match self.$enable.is_set_high().map_err(OutputStateError::EnablePinError)? {
-                        false => Ok(false),
+                        false => Err(OutputStateError::NotEnabled),
                         true => self.$input.is_set_low().map_err(OutputStateError::InputPinError)
                     }
                 }
@@ -455,6 +491,11 @@ macro_rules! stateful_output_pin_impl {
                 /// [L293x::enable_y3_and_y4()] method.
                 ///
                 /// # Errors
+                ///
+                /// If the output is disabled, it is neither high, nor low but remains
+                /// in an high impendance state und thus, its electrical level depends
+                /// on the components connected to it. In this case, the output cannot be toggled
+                /// and a [OutputStateError::NotEnabled] error will be returned.
                 ///
                 /// If an error occurs while toggling the state of the input pin, the
                 /// error of the input pin will be returned. The actual type of error
@@ -479,8 +520,6 @@ macro_rules! pwm_pin_impl {
             impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
             where
                 $type_: SetDutyCycle,
-                EN12: OutputPin,
-                EN34: OutputPin,
             {
                 #[doc = "Get the max duty value of output " $output]
                 ///
@@ -678,6 +717,7 @@ mod tests {
 
     use super::*;
     use crate::mock::{DigitalPin, PwmPin};
+    use crate::pins::Vcc;
     use coverage_helper::test;
     use embedded_hal::digital::PinState;
     use std::collections::HashMap;
@@ -920,4 +960,12 @@ mod tests {
     test_output!(y2, y1_and_y2);
     test_output!(y3, y3_and_y4);
     test_output!(y4, y3_and_y4);
+
+    #[test]
+    fn test_partial_chip() {
+        let mut l293x_part = L293x::new(DigitalPin::new(), (), (), (), Vcc(), ());
+
+        l293x_part.set_y1_high().unwrap();
+        assert!(l293x_part.is_y1_high().unwrap())
+    }
 }

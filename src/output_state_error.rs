@@ -31,6 +31,10 @@ pub enum OutputStateError<I, E> {
     /// An error occurred while setting the state of the enable pin. The contained error
     /// may contain additional information.
     EnablePinError(E),
+    /// Error returned by the `is_set_[high|low]` methods of the
+    /// [StatefulOutputPin](embedded_hal::digital::StatefulOutputPin) trait, if the output checked
+    /// is not enabled.
+    NotEnabled,
 }
 
 impl<I, E> Error for OutputStateError<I, E>
@@ -42,6 +46,7 @@ where
         match self {
             OutputStateError::InputPinError(e) => e.kind(),
             OutputStateError::EnablePinError(e) => e.kind(),
+            OutputStateError::NotEnabled => ErrorKind::Other,
         }
     }
 }
@@ -61,6 +66,7 @@ where
                 OutputStateError::InputPinError(e2) => e1 == e2,
                 _ => false,
             },
+            OutputStateError::NotEnabled => matches!(other, OutputStateError::NotEnabled),
         }
     }
 }
