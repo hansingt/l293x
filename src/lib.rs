@@ -7,7 +7,7 @@
 //! multiple platforms and boards.
 //!
 //! ## Basic usage
-//! 
+//!
 //! You can instantiate a new L293x chip using the corresponding pins
 //! from `embedded-hal`.
 //!

@@ -377,8 +377,14 @@ mod tests {
         let mut bridge = l293.y1();
         bridge.enable.borrow_mut().fail();
 
-        assert!(matches!(bridge.set_high(), Err(OutputStateError::EnablePinError(..))));
-        assert!(matches!(bridge.set_low(), Err(OutputStateError::EnablePinError(..))));
+        assert!(matches!(
+            bridge.set_high(),
+            Err(OutputStateError::EnablePinError(..))
+        ));
+        assert!(matches!(
+            bridge.set_low(),
+            Err(OutputStateError::EnablePinError(..))
+        ));
     }
 
     #[test]
