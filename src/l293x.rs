@@ -841,6 +841,7 @@ mod tests {
 
     use crate::mock::{DigitalError, DigitalPin, PwmPin};
     use crate::pins::Vcc;
+    use crate::OutputStateError;
 
     use super::*;
 
