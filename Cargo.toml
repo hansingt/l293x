@@ -1,6 +1,6 @@
 [package]
 name = "l293x"
-version = "0.2.0"
+version = "0.3.0"
 description = "Platform agnostic library for the L293 and L293D motor drivers using embedded-hal"
 authors = ["hansingt"]
 categories = ["embedded", "hardware-support", "no-std"]

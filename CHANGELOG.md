@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2024-06-19
+
+### 🚀 Features
+
+- [**breaking**] Implement the `split` feature for L293 chip ([#19](https://github.com/hansingt/l293x/issues/19))
+
+### 🧪 Testing
+
+- Run pre-commit hooks in CI ([#17](https://github.com/hansingt/l293x/issues/17))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update changelog links
+
 ## [0.2.0] - 2024-06-14
 
 ### 🚀 Features
@@ -40,6 +54,7 @@ All notable changes to this project will be documented in this file.
 
 - Add changelog
 
+[0.3.0]: https://github.com///compare/v0.2.0..v0.3.0
 [0.2.0]: https://github.com///compare/v0.1.2..v0.2.0
 [0.1.2]: https://github.com///compare/v0.1.1..v0.1.2
 [0.1.1]: https://github.com///commits/v0.1.1
