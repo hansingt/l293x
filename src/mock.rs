@@ -1,48 +1,43 @@
-extern crate alloc;
+use embedded_hal::{digital, pwm};
 
-use alloc::rc::Rc;
-use core::cell::Cell;
-use core::convert::Infallible;
-use embedded_hal::digital::{ErrorKind, ErrorType, OutputPin, StatefulOutputPin};
-
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct DigitalPin {
-    state: Rc<Cell<bool>>,
-    should_fail: Rc<Cell<bool>>,
+    state: bool,
+    should_fail: bool,
 }
 
 impl DigitalPin {
     pub fn new() -> Self {
         Self {
-            state: Rc::new(Cell::new(false)),
-            should_fail: Rc::new(Cell::new(false)),
+            state: false,
+            should_fail: false,
         }
     }
 
     pub fn fail(&mut self) {
-        self.should_fail.set(true)
+        self.should_fail = true
     }
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct DigitalError();
 
-impl embedded_hal::digital::Error for DigitalError {
+impl digital::Error for DigitalError {
     #[inline]
-    fn kind(&self) -> ErrorKind {
-        ErrorKind::Other
+    fn kind(&self) -> digital::ErrorKind {
+        digital::ErrorKind::Other
     }
 }
 
-impl ErrorType for DigitalPin {
+impl digital::ErrorType for DigitalPin {
     type Error = DigitalError;
 }
 
-impl OutputPin for DigitalPin {
+impl digital::OutputPin for DigitalPin {
     fn set_low(&mut self) -> Result<(), Self::Error> {
-        match self.should_fail.get() {
+        match self.should_fail {
             false => {
-                self.state.set(false);
+                self.state = false;
                 Ok(())
             }
             true => Err(DigitalError()),
@@ -50,9 +45,9 @@ impl OutputPin for DigitalPin {
     }
 
     fn set_high(&mut self) -> Result<(), Self::Error> {
-        match self.should_fail.get() {
+        match self.should_fail {
             false => {
-                self.state.set(true);
+                self.state = true;
                 Ok(())
             }
             true => Err(DigitalError()),
@@ -60,48 +55,73 @@ impl OutputPin for DigitalPin {
     }
 }
 
-impl StatefulOutputPin for DigitalPin {
+impl digital::StatefulOutputPin for DigitalPin {
     fn is_set_high(&mut self) -> Result<bool, Self::Error> {
-        match self.should_fail.get() {
-            false => Ok(self.state.get()),
+        match self.should_fail {
+            false => Ok(self.state),
             true => Err(DigitalError()),
         }
     }
 
     fn is_set_low(&mut self) -> Result<bool, Self::Error> {
-        match self.should_fail.get() {
-            false => Ok(!self.state.get()),
+        match self.should_fail {
+            false => Ok(!self.state),
             true => Err(DigitalError()),
         }
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct PwmPin(Rc<Cell<u16>>);
+#[derive(Debug)]
+pub struct PwmPin {
+    duty: u16,
+    should_fail: bool,
+}
 
 impl PwmPin {
     #[inline]
     pub fn new() -> Self {
-        Self(Rc::new(Cell::new(0)))
+        Self {
+            duty: 0,
+            should_fail: false,
+        }
     }
 
     #[inline]
     pub fn get_duty_cycle(&self) -> u16 {
-        self.0.get()
+        self.duty
+    }
+
+    pub fn fail(&mut self) {
+        self.should_fail = true;
     }
 }
 
-impl embedded_hal::pwm::ErrorType for PwmPin {
-    type Error = Infallible;
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct PwmError();
+
+impl pwm::Error for PwmError {
+    #[inline]
+    fn kind(&self) -> pwm::ErrorKind {
+        pwm::ErrorKind::Other
+    }
 }
 
-impl embedded_hal::pwm::SetDutyCycle for PwmPin {
+impl pwm::ErrorType for PwmPin {
+    type Error = PwmError;
+}
+
+impl pwm::SetDutyCycle for PwmPin {
     fn max_duty_cycle(&self) -> u16 {
         u16::MAX
     }
 
     fn set_duty_cycle(&mut self, duty: u16) -> Result<(), Self::Error> {
-        self.0.set(duty);
-        Ok(())
+        match self.should_fail {
+            true => Err(PwmError()),
+            false => {
+                self.duty = duty;
+                Ok(())
+            }
+        }
     }
 }

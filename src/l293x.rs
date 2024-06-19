@@ -4,7 +4,7 @@ use core::fmt::Debug;
 use embedded_hal::digital::{OutputPin, StatefulOutputPin};
 use embedded_hal::pwm::SetDutyCycle;
 
-use crate::{HalfH, OutputStateError};
+use crate::HalfH;
 
 /// L293 or L293D chip driver
 ///
@@ -351,12 +351,11 @@ where
 }
 
 macro_rules! output_pin_impl {
-    ($output:ident, $type_:ty, $enable:ty) => {
+    ($output:ident, $input:ident, $type_:ty) => {
         paste::item! {
             impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
             where
                 $type_: OutputPin,
-                $enable: OutputPin,
             {
                 #[doc = "Set the output " $output " high"]
                 ///
@@ -364,6 +363,10 @@ macro_rules! output_pin_impl {
                 ///
                 #[doc = "This function sets the input of the output channel " $output]
                 /// to high.
+                ///
+                /// In contrast to the [`set_high`](HalfH::set_high) method of the
+                /// [`$output()`](L293x::$output), this method does **not** enable the output.
+                ///
                 /// For the output to actually become "high", the corresponding
                 /// output channel needs to be enabled as well either using the
                 /// [L293x::enable_y1_and_y2()] or the [L293x::enable_y3_and_y4()]
@@ -371,7 +374,12 @@ macro_rules! output_pin_impl {
                 ///
                 /// If the channel is disabled, the output will remain in high
                 /// impendance state and the state of the output is depending on the
-                /// components connected to it
+                /// components connected to it.
+                ///
+                /// This is useful, if the states of the two outputs sharing an enable pin need
+                /// to change states together i.e. to avoid high currencies in circuit.
+                /// In this case, the outputs can be disabled first, the new states of the outputs
+                /// set and afterwards, both outputs can be enabled again together.
                 ///
                 /// # Errors
                 ///
@@ -380,8 +388,8 @@ macro_rules! output_pin_impl {
                 /// of error returned depends on the type of the input pin used.
                 pub fn [< set_ $output _high >](
                     &mut self
-                ) -> Result<(), OutputStateError<$type_::Error, $enable::Error>> {
-                    self.$output().set_high()
+                ) -> Result<(), $type_::Error> {
+                    self.$input.get_mut().set_high()
                 }
 
                 #[doc = "Set the output " $output " low"]
@@ -390,6 +398,10 @@ macro_rules! output_pin_impl {
                 ///
                 #[doc = "This function sets the input of the output channel " $output]
                 /// to low.
+                ///
+                /// In contrast to the [`set_low`](HalfH::set_high) method of the
+                /// [`$output()`](L293x::$output), this method does **not** enable the output.
+                ///
                 /// For the output to actually become "low", the corresponding
                 /// output channel needs to be enabled as well either using the
                 /// [L293x::enable_y1_and_y2()] or the [L293x::enable_y3_and_y4()]
@@ -397,7 +409,12 @@ macro_rules! output_pin_impl {
                 ///
                 /// If the channel is disabled, the output will remain in high
                 /// impendance state and the state of the output is depending on the
-                /// components connected to it
+                /// components connected to it.
+                ///
+                /// This is useful, if the states of the two outputs sharing an enable pin need
+                /// to change states together i.e. to avoid high currencies in circuit.
+                /// In this case, the outputs can be disabled first, the new states of the outputs
+                /// set and afterwards, both outputs can be enabled again together.
                 ///
                 /// # Errors
                 ///
@@ -406,8 +423,8 @@ macro_rules! output_pin_impl {
                 /// of error returned depends on the type of the input pin used.
                 pub fn [< set_ $output _low >](
                     &mut self
-                ) -> Result<(), OutputStateError<$type_::Error, $enable::Error>> {
-                    self.$output().set_low()
+                ) -> Result<(), $type_::Error> {
+                    self.$input.get_mut().set_low()
                 }
 
                 #[doc = "Set the state of output " $output]
@@ -416,6 +433,10 @@ macro_rules! output_pin_impl {
                 ///
                 /// This function sets state of the input for output channel
                 #[doc = $output "."]
+                ///
+                /// In contrast to the [`set_state`](HalfH::set_state) method of the
+                /// [`$output()`](L293x::$output), this method does **not** enable the output.
+                ///
                 /// For the output to actually take the given state, the corresponding
                 /// output channel needs to be enabled as well either using the
                 /// [L293x::enable_y1_and_y2()] or the [L293x::enable_y3_and_y4()]
@@ -423,7 +444,12 @@ macro_rules! output_pin_impl {
                 ///
                 /// If the channel is disabled, the output will remain in high
                 /// impendance state and the state of the output is depending on the
-                /// components connected to it
+                /// components connected to it.
+                ///
+                /// This is useful, if the states of the two outputs sharing an enable pin need
+                /// to change states together i.e. to avoid high currencies in circuit.
+                /// In this case, the outputs can be disabled first, the new states of the outputs
+                /// set and afterwards, both outputs can be enabled again together.
                 ///
                 /// # Errors
                 ///
@@ -433,17 +459,17 @@ macro_rules! output_pin_impl {
                 pub fn [< set_ $output _state >](
                     &mut self,
                     state: embedded_hal::digital::PinState
-                ) -> Result<(), OutputStateError<$type_::Error, $enable::Error>> {
-                    self.$output().set_state(state)
+                ) -> Result<(), $type_::Error> {
+                    self.$input.get_mut().set_state(state)
                 }
             }
         }
     };
 }
-output_pin_impl!(y1, A1, EN12);
-output_pin_impl!(y2, A2, EN12);
-output_pin_impl!(y3, A3, EN34);
-output_pin_impl!(y4, A4, EN34);
+output_pin_impl!(y1, a1, A1);
+output_pin_impl!(y2, a2, A2);
+output_pin_impl!(y3, a3, A3);
+output_pin_impl!(y4, a4, A4);
 
 macro_rules! stateful_output_pin_impl {
     ($output:ident, $type_:ty, $enable_ty:ty) => {
@@ -553,12 +579,11 @@ stateful_output_pin_impl!(y3, A3, EN34);
 stateful_output_pin_impl!(y4, A4, EN34);
 
 macro_rules! pwm_pin_impl {
-    ($output:ident, $type_:ty, $enable:ty) => {
+    ($output:ident, $input:ident, $type_:ty) => {
         paste::item! {
             impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34>
             where
                 $type_: SetDutyCycle,
-                $enable: OutputPin,
             {
                 #[doc = "Get the max duty value of output " $output]
                 ///
@@ -573,7 +598,7 @@ macro_rules! pwm_pin_impl {
                 #[doc = "l293x.set_" $output "_duty_cycle(max_duty).unwrap();"]
                 /// ```
                 pub fn [< $output _max_duty_cycle >](&self) -> u16 {
-                    self.$output().max_duty_cycle()
+                    self.$input.borrow().max_duty_cycle()
                 }
 
                 #[doc = "Set the duty cycle of output " $output]
@@ -591,11 +616,22 @@ macro_rules! pwm_pin_impl {
                 ///
                 /// # Note
                 ///
-                /// Please note, that this function only set the duty cycle of the
-                /// input channel. For the output to actually become active for the
+                /// In contrast to the [`set_duty_cycle`](HalfH::set_duty_cycle) method of the
+                /// [`$output()`](L293x::$output), this method does **not** enable the output.
+                ///
+                /// For the output to actually become active for the
                 /// same amount of time, the corresponding output channel needs to be
                 /// enabled as well using either the
                 /// [L293x::enable_y1_and_y2()] or [L293x::enable_y3_and_y4()] method.
+                ///
+                /// If the channel is disabled, the output will remain in high
+                /// impendance state and the state of the output is depending on the
+                /// components connected to it.
+                ///
+                /// This is useful, if the states of the two outputs sharing an enable pin need
+                /// to change states together i.e. to avoid high currencies in circuit.
+                /// In this case, the outputs can be disabled first, the new states of the outputs
+                /// set and afterwards, both outputs can be enabled again together.
                 ///
                 /// # Errors
                 ///
@@ -620,13 +656,13 @@ macro_rules! pwm_pin_impl {
                 pub fn [< set_ $output _duty_cycle >](
                     &mut self, duty: u16
                 ) -> Result<(), $type_::Error> {
-                    self.$output().set_duty_cycle(duty)
+                    self.$input.get_mut().set_duty_cycle(duty)
                 }
 
                 #[doc = "Set the duty cycle of output " $output " by fraction."]
                 ///
                 /// This method sets the duty cycle of the output channel
-                #[doc = $output "by a fraction defined using the given `nom` and"]
+                #[doc = $output "by a fraction defined using the given `num` and"]
                 /// `denom` parameters.
                 ///
                 /// This method is useful if you want to set the output duty cycle
@@ -639,11 +675,23 @@ macro_rules! pwm_pin_impl {
                 ///
                 /// # Note
                 ///
-                /// Please note, that this function only set the duty cycle of the
-                /// input channel. For the output to actually become active for the
+                /// In contrast to the [`set_duty_cycle_fraction`](HalfH::set_duty_cycle_fraction)
+                /// method of the [`$output()`](L293x::$output), this method does **not** enable
+                /// the output.
+                ///
+                /// For the output to actually become active for the
                 /// same amount of time, the corresponding output channel needs to be
-                /// enabled as well using either the [L293x::enable_y1_and_y2()] or
-                /// [L293x::enable_y3_and_y4()] method.
+                /// enabled as well using either the
+                /// [L293x::enable_y1_and_y2()] or [L293x::enable_y3_and_y4()] method.
+                ///
+                /// If the channel is disabled, the output will remain in high
+                /// impendance state and the state of the output is depending on the
+                /// components connected to it.
+                ///
+                /// This is useful, if the states of the two outputs sharing an enable pin need
+                /// to change states together i.e. to avoid high currencies in circuit.
+                /// In this case, the outputs can be disabled first, the new states of the outputs
+                /// set and afterwards, both outputs can be enabled again together.
                 ///
                 /// # Errors
                 ///
@@ -662,9 +710,9 @@ macro_rules! pwm_pin_impl {
                 #[doc = "l293x.set_" $output "_duty_cycle_fraction(input, max_value).unwrap();"]
                 /// ```
                 pub fn [< set_ $output _duty_cycle_fraction >](
-                    &mut self, nom: u16, denom: u16
+                    &mut self, num: u16, denom: u16
                 ) -> Result<(), $type_::Error> {
-                    self.$output().set_duty_cycle_fraction(nom, denom)
+                    self.$input.get_mut().set_duty_cycle_fraction(num, denom)
                 }
 
                 #[doc = "Set the duty cycle of output " $output " by percent"]
@@ -677,11 +725,23 @@ macro_rules! pwm_pin_impl {
                 ///
                 /// # Note
                 ///
-                /// Please note, that this function only set the duty cycle of the
-                /// input channel. For the output to actually become active for the
+                /// In contrast to the [`set_duty_cycle_percent`](HalfH::set_duty_cycle_percent)
+                /// method of the [`$output()`](L293x::$output), this method does **not** enable
+                /// the output.
+                ///
+                /// For the output to actually become active for the
                 /// same amount of time, the corresponding output channel needs to be
-                /// enabled as well using either the [L293x::enable_y1_and_y2()] or
-                /// [L293x::enable_y3_and_y4()] method.
+                /// enabled as well using either the
+                /// [L293x::enable_y1_and_y2()] or [L293x::enable_y3_and_y4()] method.
+                ///
+                /// If the channel is disabled, the output will remain in high
+                /// impendance state and the state of the output is depending on the
+                /// components connected to it.
+                ///
+                /// This is useful, if the states of the two outputs sharing an enable pin need
+                /// to change states together i.e. to avoid high currencies in circuit.
+                /// In this case, the outputs can be disabled first, the new states of the outputs
+                /// set and afterwards, both outputs can be enabled again together.
                 ///
                 /// # Errors
                 ///
@@ -691,7 +751,7 @@ macro_rules! pwm_pin_impl {
                 pub fn [< set_ $output _duty_cycle_percent >](
                     &mut self, percent: u8,
                 ) -> Result<(), $type_::Error> {
-                    self.$output().set_duty_cycle_percent(percent)
+                    self.$input.get_mut().set_duty_cycle_percent(percent)
                 }
 
                 #[doc = "Fully enable the output " $output]
@@ -701,11 +761,23 @@ macro_rules! pwm_pin_impl {
                 ///
                 /// # Note
                 ///
-                /// Please note, that this function only set the duty cycle of the
-                /// input channel. For the output to actually become active for the
+                /// In contrast to the [`set_duty_cycle_fully_on`](HalfH::set_duty_cycle_fully_on)
+                /// method of the [`$output()`](L293x::$output), this method does **not** enable
+                /// the output.
+                ///
+                /// For the output to actually become active for the
                 /// same amount of time, the corresponding output channel needs to be
-                /// enabled as well using either the [L293x::enable_y1_and_y2()] or
-                /// [L293x::enable_y3_and_y4()] method.
+                /// enabled as well using either the
+                /// [L293x::enable_y1_and_y2()] or [L293x::enable_y3_and_y4()] method.
+                ///
+                /// If the channel is disabled, the output will remain in high
+                /// impendance state and the state of the output is depending on the
+                /// components connected to it.
+                ///
+                /// This is useful, if the states of the two outputs sharing an enable pin need
+                /// to change states together i.e. to avoid high currencies in circuit.
+                /// In this case, the outputs can be disabled first, the new states of the outputs
+                /// set and afterwards, both outputs can be enabled again together.
                 ///
                 /// # Errors
                 ///
@@ -715,7 +787,7 @@ macro_rules! pwm_pin_impl {
                 pub fn [< set_ $output _duty_cycle_fully_on >](
                     &mut self
                 ) -> Result<(), $type_::Error> {
-                    self.$output().set_duty_cycle_fully_on()
+                    self.$input.get_mut().set_duty_cycle_fully_on()
                 }
 
                 #[doc = "Fully disable the output " $output]
@@ -725,11 +797,23 @@ macro_rules! pwm_pin_impl {
                 ///
                 /// # Note
                 ///
-                /// Please note, that this function only set the duty cycle of the
-                /// input channel. For the output to actually become active for the
+                /// In contrast to the [`set_duty_cycle_fully_off`](HalfH::set_duty_cycle_fully_off)
+                /// method of the [`$output()`](L293x::$output), this method does **not** enable
+                /// the output.
+                ///
+                /// For the output to actually become active for the
                 /// same amount of time, the corresponding output channel needs to be
-                /// enabled as well using either the [L293x::enable_y1_and_y2()] or
-                /// [L293x::enable_y3_and_y4()] method.
+                /// enabled as well using either the
+                /// [L293x::enable_y1_and_y2()] or [L293x::enable_y3_and_y4()] method.
+                ///
+                /// If the channel is disabled, the output will remain in high
+                /// impendance state and the state of the output is depending on the
+                /// components connected to it.
+                ///
+                /// This is useful, if the states of the two outputs sharing an enable pin need
+                /// to change states together i.e. to avoid high currencies in circuit.
+                /// In this case, the outputs can be disabled first, the new states of the outputs
+                /// set and afterwards, both outputs can be enabled again together.
                 ///
                 /// # Errors
                 ///
@@ -739,27 +823,23 @@ macro_rules! pwm_pin_impl {
                 pub fn [< set_ $output _duty_cycle_fully_off >](
                     &mut self
                 ) -> Result<(), $type_::Error> {
-                    self.$output().set_duty_cycle_fully_off()
+                    self.$input.get_mut().set_duty_cycle_fully_off()
                 }
             }
         }
     };
 }
-pwm_pin_impl!(y1, A1, EN12);
-pwm_pin_impl!(y2, A2, EN12);
-pwm_pin_impl!(y3, A3, EN34);
-pwm_pin_impl!(y4, A4, EN34);
+pwm_pin_impl!(y1, a1, A1);
+pwm_pin_impl!(y2, a2, A2);
+pwm_pin_impl!(y3, a3, A3);
+pwm_pin_impl!(y4, a4, A4);
 
 #[cfg(test)]
 mod tests {
-    extern crate std;
-
-    use std::collections::HashMap;
-
     use coverage_helper::test;
     use embedded_hal::digital::PinState;
 
-    use crate::mock::{DigitalPin, PwmPin};
+    use crate::mock::{DigitalError, DigitalPin, PwmPin};
     use crate::pins::Vcc;
 
     use super::*;
@@ -863,7 +943,7 @@ mod tests {
     }
 
     macro_rules! test_output {
-        ($name:ident, $bname:ident) => {
+        ($name:ident, $input:ident, $bname:ident) => {
             paste::item! {
                 #[test]
                 fn [< test_ $name >]() {
@@ -960,49 +1040,39 @@ mod tests {
 
                 #[test]
                 fn [< test_ $name _pwm >]() {
-                    let mut pins = HashMap::<&str, PwmPin>::from([
-                        ("y1", PwmPin::new()),
-                        ("y2", PwmPin::new()),
-                        ("y3", PwmPin::new()),
-                        ("y4", PwmPin::new()),
-                    ]);
-
                     let mut l293x = L293x::new(
-                        pins.get("y1").unwrap().clone(),
-                        pins.get("y2").unwrap().clone(),
-                        pins.get("y3").unwrap().clone(),
-                        pins.get("y4").unwrap().clone(),
+                        PwmPin::new(),
+                        PwmPin::new(),
+                        PwmPin::new(),
+                        PwmPin::new(),
                         DigitalPin::new(),
                         DigitalPin::new(),
                     );
 
-                    let pin_name = stringify!($name);
-                    let pin = pins.get_mut(pin_name).unwrap();
-
                     let max_duty = l293x.[< $name _max_duty_cycle >]();
 
                     l293x.[< set_ $name _duty_cycle >](max_duty).unwrap();
-                    assert_eq!(pin.get_duty_cycle(), max_duty);
+                    assert_eq!(l293x.$input.borrow().get_duty_cycle(), max_duty);
 
                     l293x.[< set_ $name _duty_cycle_fraction >](1, 2).unwrap();
-                    assert_eq!(pin.get_duty_cycle(), max_duty / 2);
+                    assert_eq!(l293x.$input.borrow().get_duty_cycle(), max_duty / 2);
 
                     l293x.[< set_ $name _duty_cycle_percent >](25).unwrap();
-                    assert_eq!(pin.get_duty_cycle(), max_duty / 4);
+                    assert_eq!(l293x.$input.borrow().get_duty_cycle(), max_duty / 4);
 
                     l293x.[< set_ $name _duty_cycle_fully_on >]().unwrap();
-                    assert_eq!(pin.get_duty_cycle(), max_duty);
+                    assert_eq!(l293x.$input.borrow().get_duty_cycle(), max_duty);
 
                     l293x.[< set_ $name _duty_cycle_fully_off >]().unwrap();
-                    assert_eq!(pin.get_duty_cycle(), 0);
+                    assert_eq!(l293x.$input.borrow().get_duty_cycle(), 0);
                 }
             }
         };
     }
-    test_output!(y1, y1_and_y2);
-    test_output!(y2, y1_and_y2);
-    test_output!(y3, y3_and_y4);
-    test_output!(y4, y3_and_y4);
+    test_output!(y1, a1, y1_and_y2);
+    test_output!(y2, a2, y1_and_y2);
+    test_output!(y3, a3, y3_and_y4);
+    test_output!(y4, a4, y3_and_y4);
 
     macro_rules! test_fail {
         ($name:ident, $input:ident) => {
@@ -1021,8 +1091,8 @@ mod tests {
                     l293x.enable_y3_and_y4().unwrap();
                     l293x.$input.get_mut().fail();
 
-                    assert!(matches!(l293x.[< set_ $name _low >](), Err(OutputStateError::InputPinError(..))));
-                    assert!(matches!(l293x.[< set_ $name _high >](), Err(OutputStateError::InputPinError(..))));
+                    assert!(matches!(l293x.[< set_ $name _low >](), Err(DigitalError(..))));
+                    assert!(matches!(l293x.[< set_ $name _high >](), Err(DigitalError(..))));
                     assert!(matches!(l293x.[< is_ $name _set_high >](), Err(OutputStateError::InputPinError(..))));
                     assert!(matches!(l293x.[< is_ $name _set_low >](), Err(OutputStateError::InputPinError(..))));
                     assert!(matches!(l293x.[< toggle_ $name >](), Err(OutputStateError::InputPinError(..))));

@@ -1,6 +1,6 @@
 use core::cell::RefCell;
 
-use embedded_hal::digital::{OutputPin, StatefulOutputPin};
+use embedded_hal::digital::{OutputPin, PinState, StatefulOutputPin};
 use embedded_hal::pwm::SetDutyCycle;
 
 use crate::OutputStateError;
@@ -139,6 +139,8 @@ where
 {
     /// Set the output of the bridge to low state
     ///
+    /// # Note
+    ///
     /// This method will enable the bridge, if it is not enabled yet.
     ///
     /// # Errors
@@ -160,6 +162,8 @@ where
 
     /// Set the output of the bridge to low state
     ///
+    /// # Note
+    ///
     /// This method will enable the bridge, if it is not enabled yet.
     ///
     /// # Errors
@@ -176,6 +180,29 @@ where
         self.input
             .borrow_mut()
             .set_high()
+            .map_err(OutputStateError::InputPinError)
+    }
+
+    /// Set the state of the output of the bridge
+    ///
+    /// # Note
+    ///
+    /// This method will enable the bridge, if it is not enabled yet.
+    ///
+    /// # Errors
+    ///
+    /// If an error occurs while enabling the output, a
+    /// [EnablePinError](OutputStateError::EnablePinError) will be returned.
+    ///
+    /// If an error occurs while setting the state of the input pin, a
+    /// [InputPinError](OutputStateError::InputPinError) will be returned.
+    ///
+    /// Both of them contain the original error to provide additional information to the caller.
+    fn set_state(&mut self, state: PinState) -> Result<(), Self::Error> {
+        self.enable().map_err(OutputStateError::EnablePinError)?;
+        self.input
+            .borrow_mut()
+            .set_state(state)
             .map_err(OutputStateError::InputPinError)
     }
 }
@@ -294,20 +321,164 @@ where
 impl<'a, INPUT, ENABLE> embedded_hal::pwm::ErrorType for HalfH<'a, INPUT, ENABLE>
 where
     INPUT: SetDutyCycle,
+    ENABLE: OutputPin,
 {
-    type Error = INPUT::Error;
+    type Error = OutputStateError<INPUT::Error, ENABLE::Error>;
 }
 
 impl<'a, INPUT, ENABLE> SetDutyCycle for HalfH<'a, INPUT, ENABLE>
 where
     INPUT: SetDutyCycle,
+    ENABLE: OutputPin,
 {
     fn max_duty_cycle(&self) -> u16 {
         self.input.borrow_mut().max_duty_cycle()
     }
 
+    /// Set the duty cycle of the output
+    ///
+    /// The duty cycle describes the portion of the time interval that the output should be set
+    /// "active", which actually might either mean high or low, depending on the configuration of
+    /// the PWM input pin used.
+    ///
+    /// The level of the activity scales linearly between `0` and the
+    /// [`max_duty_cycle`](HalfH::max_duty_cycle).
+    ///
+    /// # Note
+    ///
+    /// This method will enable the bridge, if it is not enabled yet.
+    ///
+    /// # Errors
+    ///
+    /// If an error occurs while enabling the output, a
+    /// [EnablePinError](OutputStateError::EnablePinError) will be returned.
+    ///
+    /// If an error occurs while setting the duty cycle of the input pin, a
+    /// [InputPinError](OutputStateError::InputPinError) will be returned.
+    ///
+    /// Both of them contain the original error to provide additional information to the caller.
     fn set_duty_cycle(&mut self, duty: u16) -> Result<(), Self::Error> {
-        self.input.borrow_mut().set_duty_cycle(duty)
+        self.enable().map_err(OutputStateError::EnablePinError)?;
+        self.input
+            .borrow_mut()
+            .set_duty_cycle(duty)
+            .map_err(OutputStateError::InputPinError)
+    }
+
+    /// Set the duty cycle of the output by a fraction
+    ///
+    /// The duty cycle describes the portion of the time interval that the output should be set
+    /// "active", which actually might either mean high or low, depending on the configuration of
+    /// the PWM input pin used.
+    ///
+    /// This method sets the duty cycle of the output by a fraction defined using the given
+    /// `num` and `denom` parameters.
+    ///
+    /// This method is useful if you want to set the output duty cycle
+    /// depending on an input value that can be between `0` and a
+    /// maximum value.
+    ///
+    /// For this, the fraction must be in between `0` and `1`, this means
+    /// that the `denom` must not be `0` and the `nom` must be smaller or
+    /// equal to `denom`.
+    ///
+    /// # Note
+    ///
+    /// This method will enable the bridge, if it is not enabled yet.
+    ///
+    /// # Errors
+    ///
+    /// If an error occurs while enabling the output, a
+    /// [EnablePinError](OutputStateError::EnablePinError) will be returned.
+    ///
+    /// If an error occurs while setting the duty cycle of the input pin, a
+    /// [InputPinError](OutputStateError::InputPinError) will be returned.
+    ///
+    /// Both of them contain the original error to provide additional information to the caller.
+    fn set_duty_cycle_fraction(&mut self, num: u16, denom: u16) -> Result<(), Self::Error> {
+        self.enable().map_err(OutputStateError::EnablePinError)?;
+        self.input
+            .borrow_mut()
+            .set_duty_cycle_fraction(num, denom)
+            .map_err(OutputStateError::InputPinError)
+    }
+
+    /// Set the duty cycle of the output by percent
+    ///
+    /// The duty cycle describes the portion of the time interval that the output should be set
+    /// "active", which actually might either mean high or low, depending on the configuration of
+    /// the PWM input pin used.
+    ///
+    /// This method sets the output "active" for (approx) the given percent of the time interval.
+    ///
+    /// The `percent` value must be between `0` and `100` (inclusive),
+    /// where `0` means fully off, and `100` means fully on.
+    ///
+    /// # Note
+    ///
+    /// This method will enable the bridge, if it is not enabled yet.
+    ///
+    /// # Errors
+    ///
+    /// If an error occurs while enabling the output, a
+    /// [EnablePinError](OutputStateError::EnablePinError) will be returned.
+    ///
+    /// If an error occurs while setting the duty cycle of the input pin, a
+    /// [InputPinError](OutputStateError::InputPinError) will be returned.
+    ///
+    /// Both of them contain the original error to provide additional information to the caller.
+    fn set_duty_cycle_percent(&mut self, percent: u8) -> Result<(), Self::Error> {
+        self.enable().map_err(OutputStateError::EnablePinError)?;
+        self.input
+            .borrow_mut()
+            .set_duty_cycle_percent(percent)
+            .map_err(OutputStateError::InputPinError)
+    }
+
+    /// Set the output fully active
+    ///
+    /// # Note
+    ///
+    /// This method will enable the bridge, if it is not enabled yet.
+    ///
+    /// # Errors
+    ///
+    /// If an error occurs while enabling the output, a
+    /// [EnablePinError](OutputStateError::EnablePinError) will be returned.
+    ///
+    /// If an error occurs while setting the duty cycle of the input pin, a
+    /// [InputPinError](OutputStateError::InputPinError) will be returned.
+    ///
+    /// Both of them contain the original error to provide additional information to the caller.
+    fn set_duty_cycle_fully_on(&mut self) -> Result<(), Self::Error> {
+        self.enable().map_err(OutputStateError::EnablePinError)?;
+        self.input
+            .borrow_mut()
+            .set_duty_cycle_fully_on()
+            .map_err(OutputStateError::InputPinError)
+    }
+
+    /// Set the output fully inactive
+    ///
+    /// # Note
+    ///
+    /// This method will enable the bridge, if it is not enabled yet.
+    ///
+    /// # Errors
+    ///
+    /// If an error occurs while enabling the output, a
+    /// [EnablePinError](OutputStateError::EnablePinError) will be returned.
+    ///
+    /// If an error occurs while setting the duty cycle of the input pin, a
+    /// [InputPinError](OutputStateError::InputPinError) will be returned.
+    ///
+    /// Both of them contain the original error to provide additional information to the caller.
+    fn set_duty_cycle_fully_off(&mut self) -> Result<(), Self::Error> {
+        self.enable().map_err(OutputStateError::EnablePinError)?;
+        self.input
+            .borrow_mut()
+            .set_duty_cycle_fully_off()
+            .map_err(OutputStateError::InputPinError)
     }
 }
 
@@ -358,6 +529,20 @@ mod tests {
     }
 
     #[test]
+    fn test_set_state() {
+        let l293 = l293();
+        let mut bridge = l293.y1();
+
+        bridge.set_state(PinState::Low).unwrap();
+        assert!(!bridge.is_set_high().unwrap());
+        assert!(bridge.is_set_low().unwrap());
+
+        bridge.set_state(PinState::High).unwrap();
+        assert!(bridge.is_set_high().unwrap());
+        assert!(!bridge.is_set_low().unwrap());
+    }
+
+    #[test]
     fn test_set_enables_output() {
         let l293 = l293();
         let mut bridge = l293.y1();
@@ -385,6 +570,10 @@ mod tests {
             bridge.set_low(),
             Err(OutputStateError::EnablePinError(..))
         ));
+        assert!(matches!(
+            bridge.set_state(PinState::Low),
+            Err(OutputStateError::EnablePinError(..))
+        ));
     }
 
     #[test]
@@ -403,11 +592,11 @@ mod tests {
 
     #[test]
     fn test_toggle_error() {
-        let mut enable = DigitalPin::new();
-        let l293 = L293x::new(DigitalPin::new(), (), (), (), enable.clone(), ());
-        let mut bridge = l293.y1();
+        let input = RefCell::new(DigitalPin::new());
+        let enable = RefCell::new(DigitalPin::new());
+        let mut bridge = HalfH::new(&input, &enable);
 
-        enable.fail();
+        enable.borrow_mut().fail();
         assert!(matches!(
             bridge.toggle(),
             Err(OutputStateError::EnablePinError(..))
@@ -415,15 +604,116 @@ mod tests {
     }
 
     #[test]
-    fn test_pwm() {
-        let pin = PwmPin::new();
-        let l293 = L293x::new(pin.clone(), (), (), (), Vcc(), ());
-        let mut bridge = l293.y1();
+    fn test_set_duty_cycle() {
+        let pin = RefCell::new(PwmPin::new());
+        let enable = RefCell::new(Vcc());
+        let mut bridge = HalfH::new(&pin, &enable);
         let max_duty = bridge.max_duty_cycle();
 
         for duty in [max_duty, max_duty / 2, 0] {
             bridge.set_duty_cycle(duty).unwrap();
-            assert_eq!(pin.get_duty_cycle(), duty);
+            assert_eq!(pin.borrow().get_duty_cycle(), duty);
         }
+    }
+
+    #[test]
+    fn test_set_duty_cycle_fraction() {
+        let pin = RefCell::new(PwmPin::new());
+        let enable = RefCell::new(Vcc());
+        let mut bridge = HalfH::new(&pin, &enable);
+        let max_duty = bridge.max_duty_cycle();
+
+        bridge.set_duty_cycle_fraction(1, 2).unwrap();
+        assert_eq!(pin.borrow().get_duty_cycle(), max_duty / 2);
+    }
+
+    #[test]
+    fn test_set_duty_cycle_percent() {
+        let pin = RefCell::new(PwmPin::new());
+        let enable = RefCell::new(Vcc());
+        let mut bridge = HalfH::new(&pin, &enable);
+        let max_duty = bridge.max_duty_cycle();
+
+        bridge.set_duty_cycle_percent(50).unwrap();
+        assert_eq!(pin.borrow().get_duty_cycle(), max_duty / 2);
+    }
+
+    #[test]
+    fn test_set_duty_cycle_fully_on() {
+        let pin = RefCell::new(PwmPin::new());
+        let enable = RefCell::new(Vcc());
+        let mut bridge = HalfH::new(&pin, &enable);
+        let max_duty = bridge.max_duty_cycle();
+
+        bridge.set_duty_cycle_fully_on().unwrap();
+        assert_eq!(pin.borrow().get_duty_cycle(), max_duty);
+    }
+
+    #[test]
+    fn test_set_duty_cycle_fully_off() {
+        let pin = RefCell::new(PwmPin::new());
+        let enable = RefCell::new(Vcc());
+        let mut bridge = HalfH::new(&pin, &enable);
+
+        bridge.set_duty_cycle_fully_off().unwrap();
+        assert_eq!(pin.borrow().get_duty_cycle(), 0);
+    }
+
+    #[test]
+    fn test_pwm_fail_enable() {
+        let pin = RefCell::new(PwmPin::new());
+        let enable = RefCell::new(DigitalPin::new());
+        let mut bridge = HalfH::new(&pin, &enable);
+        enable.borrow_mut().fail();
+
+        assert!(matches!(
+            bridge.set_duty_cycle(0),
+            Err(OutputStateError::EnablePinError(..))
+        ));
+        assert!(matches!(
+            bridge.set_duty_cycle_fraction(1, 1),
+            Err(OutputStateError::EnablePinError(..))
+        ));
+        assert!(matches!(
+            bridge.set_duty_cycle_percent(0),
+            Err(OutputStateError::EnablePinError(..))
+        ));
+        assert!(matches!(
+            bridge.set_duty_cycle_fully_on(),
+            Err(OutputStateError::EnablePinError(..))
+        ));
+        assert!(matches!(
+            bridge.set_duty_cycle_fully_off(),
+            Err(OutputStateError::EnablePinError(..))
+        ));
+    }
+
+    #[test]
+    fn test_pwm_fail_input() {
+        let pin = RefCell::new(PwmPin::new());
+        let enable = RefCell::new(DigitalPin::new());
+        let mut bridge = HalfH::new(&pin, &enable);
+        pin.borrow_mut().fail();
+
+        assert!(matches!(
+            bridge.set_duty_cycle(0),
+            Err(OutputStateError::InputPinError(..))
+        ));
+        assert!(matches!(
+            bridge.set_duty_cycle_fraction(1, 1),
+            Err(OutputStateError::InputPinError(..))
+        ));
+        assert!(matches!(
+            bridge.set_duty_cycle_percent(0),
+            Err(OutputStateError::InputPinError(..))
+        ));
+        assert!(matches!(
+            bridge.set_duty_cycle_fully_on(),
+            Err(OutputStateError::InputPinError(..))
+        ));
+        assert!(matches!(
+            bridge.set_duty_cycle_fully_off(),
+            Err(OutputStateError::InputPinError(..))
+        ));
     }
 }
