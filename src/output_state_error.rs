@@ -1,6 +1,7 @@
-use embedded_hal::digital::{Error, ErrorKind};
+use core::fmt::Debug;
+use embedded_hal::pwm::ErrorKind;
 
-/// Error returned by the [L293x](crate::L293x) and [HalfH](crate::bridge::HalfH) implementations.
+/// Error returned by the [L293x](crate::L293x) and [HalfH](crate::HalfH) implementations.
 ///
 /// This enumeration combines the possible errors returned by the input pin and the enable pin.
 ///
@@ -31,17 +32,35 @@ pub enum OutputStateError<I, E> {
     /// An error occurred while setting the state of the enable pin. The contained error
     /// may contain additional information.
     EnablePinError(E),
+    /// Error returned by the `is_set_[high|low]` methods of the
+    /// [StatefulOutputPin](embedded_hal::digital::StatefulOutputPin) trait, if the output checked
+    /// is not enabled.
+    NotEnabled,
 }
 
-impl<I, E> Error for OutputStateError<I, E>
+impl<I, E> embedded_hal::digital::Error for OutputStateError<I, E>
 where
-    I: Error,
-    E: Error,
+    I: embedded_hal::digital::Error,
+    E: embedded_hal::digital::Error,
+{
+    fn kind(&self) -> embedded_hal::digital::ErrorKind {
+        match self {
+            OutputStateError::InputPinError(e) => e.kind(),
+            OutputStateError::EnablePinError(e) => e.kind(),
+            OutputStateError::NotEnabled => embedded_hal::digital::ErrorKind::Other,
+        }
+    }
+}
+
+impl<I, E> embedded_hal::pwm::Error for OutputStateError<I, E>
+where
+    I: embedded_hal::pwm::Error,
+    E: Debug,
 {
     fn kind(&self) -> ErrorKind {
         match self {
             OutputStateError::InputPinError(e) => e.kind(),
-            OutputStateError::EnablePinError(e) => e.kind(),
+            _ => embedded_hal::pwm::ErrorKind::Other,
         }
     }
 }
@@ -61,6 +80,7 @@ where
                 OutputStateError::InputPinError(e2) => e1 == e2,
                 _ => false,
             },
+            OutputStateError::NotEnabled => matches!(other, OutputStateError::NotEnabled),
         }
     }
 }
@@ -74,11 +94,14 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::mock::{DigitalError, PwmError};
+    use embedded_hal::digital::{Error, ErrorKind};
+    use embedded_hal::pwm::{Error as _, ErrorKind as PwmErrorKind};
+
     use super::*;
-    use crate::mock::DigitalError;
 
     #[test]
-    fn check_output_state_error_kind() {
+    fn test_output_state_error_kind() {
         let input_error: OutputStateError<DigitalError, DigitalError> =
             OutputStateError::InputPinError(DigitalError());
         assert_eq!(input_error.kind(), DigitalError().kind());
@@ -86,18 +109,43 @@ mod tests {
         let enable_error: OutputStateError<DigitalError, DigitalError> =
             OutputStateError::EnablePinError(DigitalError());
         assert_eq!(enable_error.kind(), DigitalError().kind());
+
+        let not_enabled: OutputStateError<DigitalError, DigitalError> =
+            OutputStateError::NotEnabled;
+        assert_eq!(not_enabled.kind(), ErrorKind::Other);
     }
 
     #[test]
-    fn check_output_state_error_equality() {
+    fn test_output_state_pwm_error_kind() {
+        let input_error: OutputStateError<PwmError, DigitalError> =
+            OutputStateError::InputPinError(PwmError());
+        assert_eq!(input_error.kind(), PwmError().kind());
+
+        let enable_error: OutputStateError<PwmError, DigitalError> =
+            OutputStateError::EnablePinError(DigitalError());
+        assert_eq!(enable_error.kind(), PwmErrorKind::Other);
+
+        let not_enabled: OutputStateError<PwmError, DigitalError> = OutputStateError::NotEnabled;
+        assert_eq!(not_enabled.kind(), PwmErrorKind::Other);
+    }
+
+    #[test]
+    fn test_output_state_error_equality() {
         let i: OutputStateError<DigitalError, DigitalError> =
             OutputStateError::InputPinError(DigitalError());
         let e: OutputStateError<DigitalError, DigitalError> =
             OutputStateError::EnablePinError(DigitalError());
+        let ne: OutputStateError<DigitalError, DigitalError> = OutputStateError::NotEnabled;
 
         assert_eq!(i, i);
         assert_eq!(e, e);
+        assert_eq!(ne, ne);
+
         assert_ne!(e, i);
+        assert_ne!(e, ne);
         assert_ne!(i, e);
+        assert_ne!(i, ne);
+        assert_ne!(ne, e);
+        assert_ne!(ne, i);
     }
 }
