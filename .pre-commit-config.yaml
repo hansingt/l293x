@@ -18,7 +18,7 @@ repos:
       - id: detect-private-key
   # Detect typos in files
   - repo: https://github.com/crate-ci/typos
-    rev: v1.22.9
+    rev: v1.23.1
     hooks:
       - id: typos
   # Rust hooks
