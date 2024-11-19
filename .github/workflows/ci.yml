@@ -71,10 +71,10 @@ jobs:
           cargo llvm-cov nextest --verbose --no-fail-fast --codecov --output-path="${REPORT_PATH}"
           echo "report-path=${REPORT_PATH}" >> "$GITHUB_OUTPUT"
       - name: Upload coverage report to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           name: code-coverage-report
-          file: ${{ steps.tests.outputs.report-path }}
+          files: ${{ steps.tests.outputs.report-path }}
           flags: unittests
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
