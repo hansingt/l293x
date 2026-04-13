@@ -45,7 +45,7 @@ jobs:
           config: cliff.toml
           args: --latest --no-exec --github-repo ${{ github.repository }}
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ contains(github.ref, '-') }}
