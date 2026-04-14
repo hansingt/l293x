@@ -835,8 +835,8 @@ pwm_pin_impl!(y3, a3, A3);
 pwm_pin_impl!(y4, a4, A4);
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
-    use coverage_helper::test;
     use embedded_hal::digital::PinState;
 
     use crate::mock::{DigitalError, DigitalPin, PwmPin};

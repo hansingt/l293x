@@ -212,9 +212,9 @@ impl StatefulOutputPin for Gnd {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
-    use coverage_helper::test;
 
     #[test]
     fn test_error_kind() {

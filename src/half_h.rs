@@ -483,12 +483,12 @@ where
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
     use crate::mock::{DigitalPin, PwmPin};
     use crate::pins::Vcc;
     use crate::L293x;
-    use coverage_helper::test;
 
     fn l293() -> L293x<DigitalPin, DigitalPin, DigitalPin, DigitalPin, DigitalPin, DigitalPin> {
         L293x::new(

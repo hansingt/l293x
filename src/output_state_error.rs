@@ -93,6 +93,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use crate::mock::{DigitalError, PwmError};
     use embedded_hal::digital::{Error, ErrorKind};
