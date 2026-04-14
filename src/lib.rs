@@ -75,8 +75,8 @@
 //!
 //! loop {
 //!     // Full speed forward
-//!     motors.set_outpu1_duty_cycle_fully_on();
-//!     motors.set_outpu3_duty_cycle_fully_on();
+//!     motors.set_output1_duty_cycle_fully_on();
+//!     motors.set_output3_duty_cycle_fully_on();
 //!     delay::delay_millis(500);
 //!     motors.set_output1_duty_cycle_fully_off();
 //!     motors.set_output3_duty_cycle_fully_off();

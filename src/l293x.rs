@@ -138,22 +138,22 @@ impl<A1, A2, A3, A4, EN12, EN34> L293x<A1, A2, A3, A4, EN12, EN34> {
     }
 
     #[inline]
-    pub fn y1(&self) -> HalfH<A1, EN12> {
+    pub fn y1(&self) -> HalfH<'_, A1, EN12> {
         HalfH::new(&self.a1, &self.en12)
     }
 
     #[inline]
-    pub fn y2(&self) -> HalfH<A2, EN12> {
+    pub fn y2(&self) -> HalfH<'_, A2, EN12> {
         HalfH::new(&self.a2, &self.en12)
     }
 
     #[inline]
-    pub fn y3(&self) -> HalfH<A3, EN34> {
+    pub fn y3(&self) -> HalfH<'_, A3, EN34> {
         HalfH::new(&self.a3, &self.en34)
     }
 
     #[inline]
-    pub fn y4(&self) -> HalfH<A4, EN34> {
+    pub fn y4(&self) -> HalfH<'_, A4, EN34> {
         HalfH::new(&self.a4, &self.en34)
     }
 }
@@ -506,7 +506,7 @@ macro_rules! stateful_output_pin_impl {
                 /// returned instead.
                 pub fn [< is_ $output _set_high >](
                     &mut self
-                ) -> Result<bool, <crate::half_h::HalfH<$type_, $enable_ty> as embedded_hal::digital::ErrorType>::Error> {
+                ) -> Result<bool, <crate::half_h::HalfH<'_, $type_, $enable_ty> as embedded_hal::digital::ErrorType>::Error> {
                     self.$output().is_set_high()
                 }
 
@@ -537,7 +537,7 @@ macro_rules! stateful_output_pin_impl {
                 /// returned instead.
                 pub fn [< is_ $output _set_low >](
                     &mut self
-                ) -> Result<bool, <crate::half_h::HalfH<$type_, $enable_ty> as embedded_hal::digital::ErrorType>::Error> {
+                ) -> Result<bool, <crate::half_h::HalfH<'_, $type_, $enable_ty> as embedded_hal::digital::ErrorType>::Error> {
                     self.$output().is_set_low()
                 }
 
@@ -566,7 +566,7 @@ macro_rules! stateful_output_pin_impl {
                 /// depends on the type of input pin used.
                 pub fn [< toggle_ $output >](
                     &mut self
-                ) -> Result<(), <crate::half_h::HalfH<$type_, $enable_ty> as embedded_hal::digital::ErrorType>::Error> {
+                ) -> Result<(), <crate::half_h::HalfH<'_, $type_, $enable_ty> as embedded_hal::digital::ErrorType>::Error> {
                     self.$output().toggle()
                 }
             }
@@ -1125,11 +1125,11 @@ mod tests {
             DigitalPin::new(),
         );
         let mut y1 = split.y1();
-        let mut y1_cpy = split.y1();
+        let mut y1_copy = split.y1();
 
         y1.enable().unwrap();
         y1.set_high().unwrap();
-        assert!(y1_cpy.is_set_high().unwrap())
+        assert!(y1_copy.is_set_high().unwrap())
     }
 
     #[test]
